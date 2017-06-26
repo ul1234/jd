@@ -1,54 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import time, pickle, os, re
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
-class Page:
-    def __init__(self, name, addr):
-        self.name = name
-        self.addr = addr
-
-class JD:
-    login = Page('login', r'https://passport.jd.com/new/login.aspx')
-    main = Page('main', r'http://www.jd.com')
-    list = Page('list', r'http://order.jd.com/center/list.action')
-
-    def __init__(self):
-        pass
-
-class Debug:
-    save_html = False
-    save_screen = False
-    debug_log = False
-    NONE = 0
-    ALL = 1
-
-    @staticmethod
-    def debug_level(level):
-        if level == Debug.ALL:
-            Debug.enable_save_html()
-            Debug.enable_save_screen()
-            Debug.enable_debug_log()
-
-    @staticmethod
-    def enable_save_html():
-        Debug.save_html = True
-
-    @staticmethod
-    def enable_save_screen():
-        Debug.save_screen = True
-
-    @staticmethod
-    def enable_debug_log():
-        Debug.debug_log = True
-
-def chinese(word):
-    return word.decode('utf-8')
+from page import JD, PageNotloaded, CookieNotExist
+from miscellaneous import *
 
 class Account:
     def __init__(self, user, pwd, rk_user = '', rk_pwd = ''):
@@ -56,110 +10,53 @@ class Account:
         self.pwd = pwd
         self.rk_user = rk_user
         self.rk_pwd = rk_pwd
-        print 'before'
-        self.driver = webdriver.PhantomJS()
-        #self.driver = webdriver.Chrome()
-        print 'after'
-        self.cookie_file = 'cookies.dat'
-        self.current_page = ''
-        self.login()
+        self.jd = JD()
+        clear_save()
 
     def get(self, page):
-        self.driver.get(page.addr)
-        self.current_page = page
-        self.save_screen()
-        self.save_html()
-
-    def save_cookie(self):
-        pickle.dump(self.driver.get_cookies() , open(self.cookie_file, 'wb'))
-
-    def load_cookie(self):
-        if os.path.isfile(self.cookie_file):
-            cookies = pickle.load(open(self.cookie_file, 'rb'))
-            for cookie in cookies:
-                #self.driver.add_cookie(cookie)
-                self.driver.add_cookie({k: cookie[k] for k in ('name', 'value', 'domain', 'path', 'expiry') if k in cookie})
-            return True
-        return False
-
-    def cookie_exist(self):
-        return os.path.isfile(self.cookie_file)
-
-    def get_list(self):
-        self.get(JD.list)
+        need_login = False
+        try:
+            page.load()
+        except CookieNotExist as e:
+            print_(e)
+            need_login = True
+        except PageNotloaded:
+            print_('page [%s] not load.' % page.name)
+            if page.is_page(self.jd.login_page):
+                need_login = True
+            else:
+                print_('please check the page.')
+        if need_login:
+            print_('start login...')
+            self.login()
+            self.get(page)
 
     def login(self):
-        if self.cookie_exist():
-            self.get(JD.main)
-            self.load_cookie()
-        else:
-            self.login_without_cookie()
+        self.jd.pre_login()
 
-    def login_without_cookie(self):
-        self.get(JD.login)
-        self.driver.find_element_by_xpath("//div[@class='login-tab login-tab-r']/a").click()
-        self.save_screen()
-        self.fill_element('loginname', self.user)
-        self.fill_element('nloginpwd', self.pwd)
-        self.driver.find_element_by_id('loginsubmit').click()
-        self.save_screen()
-        self.print_page_title()
-        WebDriverWait(self.driver, 10).until_not(EC.title_contains(chinese('登录')))
-        self.save_screen()
-        self.print_page_title()
-        if chinese('激活') in self.driver.title:
-            WebDriverWait(self.driver, 10).until_not(EC.presence_of_element_located((By.ID, "code")))
-            code = raw_input('Please input the auth code:')
-            self.fill_element('code', code)
-            self.driver.find_element_by_id('submitBtn').click()
-            self.save_screen()
-            WebDriverWait(self.driver, 10).until_not(EC.title_contains(chinese('激活')))
-            self.print_page_title()
-            self.save_screen()
-            self.save_cookie()
-        else:
-            print 'no'
-        self.save_html(JD.main)
+        self.jd.login_page.load(check_cookie = False)
+        self.jd.login_page.fill(self.user, self.pwd)
+        self.jd.login_page.submit()
 
-    def fill_element(self, element_name, value):
-        elem = self.driver.find_element_by_id(element_name)
-        elem.clear()
-        elem.send_keys(value)
+        if self.jd.activ_page.check_load():
+            self.jd.activ_page.fill()
+            self.jd.activ_page.submit()
+        if self.jd.main_page.check_load():
+            print_('login in successfully.')
+        self.jd.main_page.driver.save_cookie()
 
-    def print_(self, str):
-        print str
-
-    def print_page_title(self):
-        if Debug.debug_log:
-            self.print_(self.driver.title)
-
-    def save_screen(self, page = ''):
-        if Debug.save_screen:
-            if not hasattr(self, 'save_cnt'): self.save_cnt = 0
-            self.save_cnt += 1
-            page = page or self.current_page
-            f = '%d_%s.png' % (self.save_cnt, page.name)
-            self.driver.save_screenshot(f)
-            self.print_('%s saved.' % f)
-
-    def save_html(self, page = ''):
-        if Debug.save_html:
-            if not hasattr(self, 'save_cnt'): self.save_cnt = 0
-            self.save_cnt += 1
-            page = page or self.current_page
-            f = '%d_%s.html' % (self.save_cnt, page.name)
-            open('test.html', 'w').write(self.driver.page_source.encode('utf-8'))
-            r = re.search(r'charset="(.*?)"', self.driver.page_source)
-            charset = 'utf-8' if not r else r.group(1)
-            if r:
-                print r.group(0)
-                print r.group(1)
-            print charset
-            open(f, 'w').write(self.driver.page_source.encode(charset))
-            self.print_('%s saved.' % f)
-
-    def close(self):
-        self.driver.quit()
+    def quit(self):
+        self.jd.quit()
+        
+    def get_orders(self):
+        self.get(self.jd.list_page)
+        orders = self.jd.list_page.my_order()
+        print_('total %d orders.' % len(orders))
+        import pprint
+        pprint.pprint(orders[0])
+        
+    def get_coupons(self):
+        self.get(self.jd.coupon_page)
 
 
 if __name__ == '__main__':
@@ -171,6 +68,5 @@ if __name__ == '__main__':
     print user
     #print passwd
     a = Account(user, passwd)
-    Debug.debug_level(Debug.ALL)
-    a.get_list()
-    a.close()
+    a.get_coupons()
+    a.quit()

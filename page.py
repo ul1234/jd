@@ -2,127 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import time, pickle, os, re
-import requests
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
+from page_driver import RequestsDriver, SeleniumDriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support import expected_conditions as EC
-
-def print_(str):
-    print str
-
-def chinese(word):
-    return word.decode('utf-8')
-
-
-class PageDriver:
-    def __init__(self):
-        self.cookie_loaded = False
-        self.cookie_file = 'cookies.dat'
-
-    def title(self, page_html = None):
-        html = self.page_source() if page_html is None else page_html
-        r = re.search(r'<title>([^<]+)<', html)
-        if r:
-            return r.group(1)
-        else:
-            return None
-
-    def save_cookie(self):
-        pickle.dump(self.get_cookies(), open(self.cookie_file, 'wb'))
-        print_('cookie saved.')
-        self.cookie_loaded = True
-
-    def install_preload_cookie(self, preload_cookie_func):
-        self.preload_cookie = preload_cookie_func
-
-    def load_cookie(self):
-        if hasattr(self, 'preload_cookie'): self.preload_cookie()
-        if os.path.isfile(self.cookie_file):
-            cookies = pickle.load(open(self.cookie_file, 'rb'))
-            self.add_cookies(cookies)
-            self.cookie_loaded = True
-            print_('cookie loaded.')
-            return True
-        return False
-
-    def cookie_exist(self):
-        return os.path.isfile(self.cookie_file)
-
-    def invalidate_cookie(self):
-        self.cookie_loaded = False
-        if self.cookie_exist():
-            os.remove(self.cookie_file)
-            print_('cookie deleted.')
-
-    def should_load_cookie(self):
-        return self.cookie_exist() and not self.cookie_loaded
-
-class RequestsDriver(PageDriver):
-    def __init__(self):
-        self.session = requests.Session()
-        self.page_html = None
-        self.cookies = {}
-        PageDriver.__init__(self)
-
-    def page_source(self):
-        return self.page_html
-
-    def get(self, url):
-        r = self.session.get(url, cookies = self.cookies, verify = False)
-        print_('get url [%s] status %d' % (url, r.status_code))
-        self.page_html = r.text
-        print_('title: %s' % self.title())
-
-
-    def wait(self, timeout, condition_func):
-        #if not condition_func(): raise Exception('wait timeout')
-        return True if condition_func() else False
-        #for i in xrange(timeout):
-        #    if condition_func():
-        #        return True
-        #    time.sleep(1)
-        #return False
-
-    def add_cookies(self, cookies):
-        self.cookies = {}
-        for cookie in cookies:
-            self.cookies[cookie['name']] = cookie['value']
-
-class SeleniumDriver(PageDriver):
-    def __init__(self):
-        self.driver = webdriver.PhantomJS()
-        #self.driver = webdriver.Chrome()
-        print_('selenium driver open browser.')
-        PageDriver.__init__(self)
-
-    def page_source(self):
-        return self.driver.page_source
-
-    def get(self, url):
-        self.driver.get(url)
-        print_('title: %s' % self.title())
-
-    def wait(self, timeout, condition_func):
-        try:
-            WebDriverWait(self.driver, timeout).until(lambda driver: condition_func())
-            return True
-        except TimeoutException as e:
-            print_(e)
-            return False
-
-    def get_cookies(self):
-        return self.driver.get_cookies()
-
-    def add_cookies(self, cookies):
-        for cookie in cookies:
-            #self.driver.add_cookie(cookie)
-            self.driver.add_cookie({k: cookie[k] for k in ('name', 'value', 'domain', 'path', 'expiry') if k in cookie})
-    
-    def close(self):
-        self.driver.quit()
+from miscellaneous import *
 
 class PageNotloaded(Exception):
     pass
@@ -160,11 +42,11 @@ class Page:
         if hasattr(self, 'post_load'): self.post_load()
         print_('entered %s page! title: %s' % (self.name, self.driver.title()))
         self.save('after_load')
-        
+
     def pre_load(self):
         print_('preloading %s: %s' % (self.name, self.url))
         self.driver.get(self.url)
-        
+
     def check_load(self):
         if not self.check_enter(): return False
         if hasattr(self, 'post_load'): self.post_load()
@@ -172,10 +54,13 @@ class Page:
         self.save('jump_load')
         return True
 
-    def check_page(self, pages):
+    def is_page(self, page):
+        return page.check_enter(self.driver.page_source())
+        
+    def check_pages(self, pages):
         if not isinstance(pages, list): pages = [pages]
         for page in pages:
-            if page.check_enter(self.driver.page_source()):
+            if self.is_page(page):
                 return page.name
         return ''
 
@@ -185,10 +70,10 @@ class Page:
     def wait_loaded(self, timeout = 10):
         #WebDriverWait(self.driver, timeout).until(lambda driver: self.check_enter())
         self.driver.wait(timeout, self.check_enter)
-        
+
     def check_exit(self, page_html = None):
         return not self.check_enter(page_html)
-        
+
     def wait_exit(self, timeout = 10):
         #WebDriverWait(self.driver, timeout).until(lambda driver: self.check_exit())
         self.driver.wait(timeout, self.check_exit)
@@ -206,7 +91,7 @@ class Page:
 
     def save(self, info, html = None):
         if self.save_html:
-            html = html if html is not None else self.driver.page_source()
+            html = html if not html is None else self.driver.page_source()
             if not hasattr(self, 'save_cnt'): self.save_cnt = 0
             self.save_cnt += 1
             r = re.search(r'<meta[^>]+charset="?(.*?)"', html)
@@ -221,7 +106,7 @@ class Page:
             f = '%d_%s_%s.png' % (self.save_cnt, self.name, info)
             self.webdriver.save_screenshot(f)
             print_('%s saved.' % f)
-            
+
     def fill_elements(self, elements):
         for element, value in elements.items():
             elem = self.webdriver.find_element(*element)
@@ -242,11 +127,11 @@ class LoginPage(Page):
 
     def post_load(self):
         self.webdriver.find_element(*self.switch_login_element).click()
-        
+
     def fill(self, user, pwd):
         self.fill_elements({self.user_element: user, self.pwd_element: pwd})
         #raise Exception('after fill') # for test
-                
+
 
 class ActiPage(Page):
     def __init__(self):
@@ -269,8 +154,8 @@ class MainPage(Page):
 
     def init_element(self):
         self.title_identity = chinese('正品低价')
-        
-        
+
+
 class ListPage(Page):
     def __init__(self):
         Page.__init__(self, 'list', r'http://order.jd.com/center/list.action')
@@ -278,93 +163,71 @@ class ListPage(Page):
     def init_element(self):
         self.title_identity = chinese('订单')
 
-
+    def my_order(self, html = None):
+        html = html if not html is None else self.driver.page_source()
+        orders = html_contents(html, '<tbody id=', '</tbody>')
+        print len(orders)
+        order_list = []
+        for order in orders:
+            try:
+                order_time = html_content(order, '<span class="dealtime"', '</span>')
+                order_id = html_content(order, '<a name=.orderIdLinks.', '</a>')
+                order_link = html_attribute(order, '<a name=.orderIdLinks.', 'href')
+                order_info = html_content(order, '<div class="pc"', '</div>')
+                order_name = html_content(order_info, '<strong>', '</strong>')
+                order_addr = html_content(order_info, '<p>', '</p>')
+                order_phone = html_contents(order_info, '<p>', '</p>')[1]
+                order_item_id = html_attribute(order, '<span', 'data-sku')
+                item_html = self.driver.get_html('http://item.jd.com/%s.html' % str(order_item_id))
+                order_item_name = html_content(item_html, '<title>', '</title>')
+                order_list.append({'id': order_id, 'time': order_time, 'item_id': order_item_id, 'item': order_item_name, 
+                                   'link': order_link, 'name': order_name, 'addr': order_addr, 'phone': order_phone})
+            except Exception as e:
+                print_(e)
+                #raise
+        return order_list
+        
+class CouponPage(Page):
+    def __init__(self):
+        Page.__init__(self, 'coupon', r'http://quan.jd.com/user_quan.action?couponType=-1&sort=1&page=1')
+        
+    def init_element(self):
+        self.title_identity = chinese('优惠券')
+        
+    def my_coupons(self):
+        pass
+        
+        
 class JD:
     login_page = LoginPage()
     activ_page = ActiPage()
     list_page = ListPage()
     main_page = MainPage()
+    coupon_page = CouponPage()
+        
+    def __init__(self):
+        self.install_requests_driver()
 
-    @staticmethod
-    def install_driver(pages, driver):
+    def install_driver(self, pages, driver):
         if not isinstance(pages, list): pages = [pages]
         for page in pages:
             page.install_driver(driver)
 
-    @staticmethod
-    def install_selenium_driver():
-        JD.selenium_driver = SeleniumDriver()
-        JD.selenium_driver.install_preload_cookie(lambda: JD.main_page.pre_load())
-        JD.install_driver([JD.login_page, JD.activ_page, JD.main_page], JD.selenium_driver) 
+    def install_selenium_driver(self):
+        self.selenium_driver = SeleniumDriver()
+        self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
+        self.install_driver([self.login_page, self.activ_page, self.main_page], self.selenium_driver)
 
-    @staticmethod
-    def install_requests_driver():
-        JD.requests_driver = RequestsDriver()
-        Page.default_driver(JD.requests_driver)
+    def install_requests_driver(self):
+        self.requests_driver = RequestsDriver()
+        Page.default_driver(self.requests_driver)
 
-    @staticmethod
-    def pre_login():
-        if not hasattr(JD, 'selenium_driver'): JD.install_selenium_driver()
+    def pre_login(self):
+        if not hasattr(self, 'selenium_driver'): self.install_selenium_driver()
         self.selenium_driver.invalidate_cookie()
         self.requests_driver.invalidate_cookie()
 
-    @staticmethod 
-    def quit():
-        if hasattr(JD, 'selenium_driver'): JD.selenium_driver.close()
-
-
-class Account:
-    def __init__(self, user, pwd, rk_user = '', rk_pwd = ''):
-        self.user = user
-        self.pwd = pwd
-        self.rk_user = rk_user
-        self.rk_pwd = rk_pwd
-        JD.install_requests_driver()    
-
-    def get(self, page):
-        need_login = False
-        try:
-            page.load()
-        except CookieNotExist as e:
-            print_(e)
-            need_login = True
-        except PageNotloaded:
-            print_('page [%s] not load.' % page.name)
-            if page.check_page(JD.login_page) == JD.login_page.name:
-                need_login = True
-            else:
-                print_('please check the page.')
-        if need_login:
-            print_('start login...')
-            self.login()
-            self.get(page)
-
-    def login(self):
-        JD.pre_login()
-
-        JD.login_page.load(check_cookie = False)
-        JD.login_page.fill(self.user, self.pwd)
-        JD.login_page.submit()
-        
-        if JD.activ_page.check_load():
-            JD.activ_page.fill()
-            JD.activ_page.submit()
-        if JD.main_page.check_load():
-            print_('login in successfully.')            
-        JD.main_page.driver.save_cookie()
-
     def quit(self):
-        JD.quit()
+        if hasattr(self, 'selenium_driver'): self.selenium_driver.close()
 
 
-if __name__ == '__main__':
-    try:
-        user, passwd = open('user.dat').read().strip().split(':')
-    except Exception as e:
-        user, passwd = '#', '#'
-        print(e)
-    print user
-    #print passwd
-    a = Account(user, passwd)
-    a.get(JD.list_page)
-    a.quit()
