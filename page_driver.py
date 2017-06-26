@@ -69,7 +69,12 @@ class RequestsDriver(PageDriver):
         return self.page_html
 
     def get(self, url):
-        r = self.session.get(url, cookies = self.cookies, verify = False)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/54.0.2840.59 Safari/537.36 115Browser/8.0.0',
+            'Accept': 'application / json'
+        }
+        r = self.session.get(url, headers = headers, cookies = self.cookies, verify = False)
         print_('get url [%s] status %d' % (url, r.status_code))
         self.page_html = r.text
         print_('title: %s' % self.title())

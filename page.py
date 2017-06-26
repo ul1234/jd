@@ -197,7 +197,22 @@ class CouponPage(Page):
     def my_coupons(self):
         pass
         
+class DataPage(Page):
+    def __init__(self):
+        Page.__init__(self, 'data', r'http://datawallet.jd.com/profile.html')
         
+    def init_element(self):
+        self.title_identity = chinese('流量加油站')
+        self.sign_button = (By.CLASS_NAME, 'btn-sign')
+        self.key_input = (By.CLASS_NAME, 'input-key')
+        self.key_button = (By.CLASS_NAME, 'btn-key')
+        
+    def sign(self):
+        btn = self.webdriver.find_element(*self.sign_button)
+        if btn.isEnabled(): btn.click()
+        print_('signed data.')
+
+
 class JD:
     login_page = LoginPage()
     activ_page = ActiPage()
