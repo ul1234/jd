@@ -47,16 +47,20 @@ class Account:
 
     def quit(self):
         self.jd.quit()
-        
+
     def get_orders(self):
         self.get(self.jd.list_page)
         orders = self.jd.list_page.my_order()
         print_('total %d orders.' % len(orders))
         import pprint
         pprint.pprint(orders[0])
-        
+
     def get_coupons(self):
         self.get(self.jd.coupon_page)
+
+    def sign(self):
+        self.get(self.jd.data_page)
+        self.jd.data_page.sign()
 
 
 if __name__ == '__main__':

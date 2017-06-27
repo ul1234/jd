@@ -206,12 +206,29 @@ class DataPage(Page):
         self.sign_button = (By.CLASS_NAME, 'btn-sign')
         self.key_input = (By.CLASS_NAME, 'input-key')
         self.key_button = (By.CLASS_NAME, 'btn-key')
+        self.key_image = (By.CLASS_NAME, 'userDefinedArea')
         
     def sign(self):
         btn = self.webdriver.find_element(*self.sign_button)
         if btn.isEnabled(): btn.click()
         print_('signed data.')
+        alert = self.webdriver.switch_to.alert
+        time.sleep(0.5)
+        print_('alert: %s' % alert.text)
+        alert.dismiss()
 
+    def key(self):
+        btn = self.webdriver.find_element(*self.key_button)
+        btn.click()
+        print_('check key page...')
+        self.webdriver.switch_to_newpage()
+        self.driver.wait(10, lambda: EC.presence_of_element_located(self.key_image)(self.webdriver))
+        images = self.webdriver.find_elements(*self.key_image)
+        for image in images:
+            html = image.get_attribute('innerHTML')
+            links = html_attributes(html, '<img', 'original')
+            if len(links) == 1:
+                # save the image????
 
 class JD:
     login_page = LoginPage()
@@ -219,6 +236,7 @@ class JD:
     list_page = ListPage()
     main_page = MainPage()
     coupon_page = CouponPage()
+    data_page = DataPage()
         
     def __init__(self):
         self.install_requests_driver()
