@@ -17,11 +17,12 @@ class PageDriver:
 
     def title(self, page_html = None):
         html = self.page_source() if page_html is None else page_html
-        r = re.search(r'<title>([^<]+)<', html)
-        if r:
-            return r.group(1)
-        else:
-            return None
+        return html_content(html, '<title>', '</title>').strip()
+        #r = re.search(r'<title>([^<]+)<', html)
+        #if r:
+        #    return r.group(1).strip()
+        #else:
+        #    return None
             
     def get_html(self, url):
         self.get(url)
@@ -76,7 +77,7 @@ class RequestsDriver(PageDriver):
         r = self.session.get(url, headers = headers, cookies = self.cookies, verify = False)
         print_('get url [%s] status %d' % (url, r.status_code))
         self.page_html = r.text
-        print_('title: %s' % self.title())
+        #print_('title: %s' % self.title())
 
     def wait(self, timeout, condition_func):
         #if not condition_func(): raise Exception('wait timeout')
@@ -94,8 +95,8 @@ class RequestsDriver(PageDriver):
 
 class SeleniumDriver(PageDriver):
     def __init__(self):
-        #self.driver = webdriver.PhantomJS()
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.PhantomJS()
+        #self.driver = webdriver.Chrome()
         print_('selenium driver open browser.')
         PageDriver.__init__(self)
 
@@ -104,7 +105,7 @@ class SeleniumDriver(PageDriver):
 
     def get(self, url):
         self.driver.get(url)
-        print_('title: %s' % self.title())
+        #print_('title: %s' % self.title())
 
     def wait(self, timeout, condition_func):
         try:

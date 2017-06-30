@@ -22,7 +22,7 @@ def html_contents(html, start_tag, end_tag):
         pattern = '%s(.*?)%s' % (start_tag, end_tag)
     else:
         pattern = '%s[^>]*>(.*?)%s' % (start_tag, end_tag)
-    print 'pattern:', pattern
+    #print 'pattern:', pattern
     #print re.findall(pattern, html, re.MULTILINE|re.DOTALL)
     return re.findall(pattern, html, re.MULTILINE|re.DOTALL)
 
@@ -31,7 +31,7 @@ def html_content(html, start_tag, end_tag):
 
 def html_attributes(html, start_tag, attr):
     pattern = '%s[^>]*%s=["\']([^"\']*)["\']' % (start_tag, attr)
-    print pattern
+    #print pattern
     return re.findall(pattern, html, re.MULTILINE|re.DOTALL)
 
 def html_attribute(html, start_tag, attr):

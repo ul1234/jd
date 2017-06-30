@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from page import JD, PageNotloaded, CookieNotExist
+from coupon import Coupon
 from miscellaneous import *
 
 class Account:
@@ -11,6 +12,7 @@ class Account:
         self.rk_user = rk_user
         self.rk_pwd = rk_pwd
         self.jd = JD()
+        self.coupon = Coupon(self)
         clear_save()
 
     def get(self, page):
@@ -55,9 +57,6 @@ class Account:
         import pprint
         pprint.pprint(orders[0])
 
-    def get_coupons(self):
-        self.get(self.jd.coupon_page)
-
     def data_sign(self):
         self.get(self.jd.data_page)
         self.jd.data_page.sign()
@@ -70,8 +69,9 @@ if __name__ == '__main__':
         user, passwd = '#', '#'
         print(e)
     print user
+    #raise '1'
     #print passwd
     a = Account(user, passwd)
-    #a.get_coupons()
-    a.data_sign()
+    a.coupon.list_coupons()
+    #a.data_sign()
     #a.quit()

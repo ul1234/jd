@@ -82,7 +82,7 @@ class Page:
         print_('exit %s page! enter page: %s' % (self.name, self.driver.title()))
 
     def submit(self):
-        print_('submitting %s page: %s' % (self.name, self.url))
+        print_('submitting %s page[%s]...' % (self.name, self.url))
         self.webdriver.find_element(*self.submit_element).click()
         self.wait_exit()
         self.save('after_submit')
@@ -195,9 +195,53 @@ class CouponPage(Page):
 
     def init_element(self):
         self.title_identity = chinese('优惠券')
+        self.list_url = r'http://a.jd.com/coupons.html?page=%d'
+        self.free_coupon_url = r'http://a.jd.com/ajax/freeGetCoupon.html?key=%s&r=0.7308938041372057'
+        self.bean_coupon_url = r'http://a.jd.com/ajax/beanExchangeCoupon.html?id=%s&r=0.5559653794026669'
 
-    def my_coupons(self):
-        pass
+    def _last_page(self, html):
+        pattern = r'>(\d+)</a>[\n\r\s]*<a[^>]*ui-pager-next'
+        r = re.search(pattern, html)
+        if r:
+            return int(r.group(1))
+        else:
+            raise Exception('cannot find last page number, check the html file.')
+
+    def get_coupons(self):
+        html = self.driver.get_html(self.list_url % 1)  # page 1
+        MAX_PAGES = 10
+        last_page_num = min(MAX_PAGES, self._last_page(html))
+        coupons = self._coupons_list(html = html)
+        for page in xrange(2, last_page_num + 1):
+            coupons.update(self._coupons_list(page))
+        return coupons
+
+    def _coupons_list(self, page = 1, html = ''):
+        url = self.list_url % page
+        if not html: html = self.driver.get_html(url)
+        self.save('coupons_list_%d' % page)
+        coupons_dict = {}
+        coupons = re.findall('<div class="quan-item(.*?)<div class="q-state">', html, flags = re.DOTALL)
+        for coupon in coupons:
+            free_pattern = r'data-key="(.*?)"\s*data-linkUrl="(.*?)".*?<strong class="num">(.*?)</strong>.*?<div class="typ-txt">(.*?)</div>.*?<span class="ftx-06">\D*(\d+)\D*</span>.*?<p title="(.*?)".*?coupon-time.*?>(.*?)</div>'
+            r = re.search(free_pattern, coupon, flags = re.IGNORECASE|re.DOTALL)
+            if r:
+                data_key, link_url, discount_price, type, available_price, usage, time_range = [d.strip() for d in r.groups()]
+                get_url = self.free_coupon_url % data_key
+                coupons_dict[data_key] = {'usage': usage, 'discount_price': discount_price, 'available_price': available_price,
+                                         'data_key': data_key, 'link_url': link_url, 'type': type, 'get_url': get_url, 'time_range': time_range}
+            else:
+                bean_pattern = r'data-linkUrl="(.*?)".*?data-id="(.*?)".*?data-bean="(.*?)".*<strong class="num">(.*?)</strong>.*?<div class="typ-txt">(.*?)</div>.*?<span class="ftx-06">\D*(\d+)\D*</span>.*?<p title="(.*?)".*?coupon-time.*?>(.*?)</div>'
+                r = re.search(bean_pattern, coupon, flags = re.IGNORECASE|re.DOTALL)
+                if r:
+                    link_url, data_id, data_bean, discount_price, type, available_price, usage, time_range = r.groups()
+                    get_url = self.bean_coupon_url % data_id
+                    coupons_dict[data_id] = {'usage': usage, 'discount_price': discount_price, 'available_price': available_price,
+                                             'data_id': data_id, 'data_bean': data_bean, 'link_url': link_url, 'type': type, 'get_url': get_url, 'time_range': time_range}
+                else:
+                    print_('cannot find coupon list in url: %s' % url)
+        print_('find %d coupons in page %d' % (len(coupons_dict), page))
+        return coupons_dict
 
 class DataPage(Page):
     def __init__(self):
@@ -240,6 +284,10 @@ class DataPage(Page):
                 # save the image????
                 pass
 
+class AnyPage(Page):
+    def __init__(self):
+        Page.__init__(self, 'any', '')
+
 class JD:
     login_page = LoginPage()
     activ_page = ActiPage()
@@ -247,6 +295,7 @@ class JD:
     main_page = MainPage()
     coupon_page = CouponPage()
     data_page = DataPage()
+    page = AnyPage()
 
     def __init__(self):
         self.install_requests_driver()
