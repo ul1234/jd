@@ -7,7 +7,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support import expected_conditions as EC
 from miscellaneous import *
 
 
@@ -95,8 +94,8 @@ class RequestsDriver(PageDriver):
 
 class SeleniumDriver(PageDriver):
     def __init__(self):
-        self.driver = webdriver.PhantomJS()
-        #self.driver = webdriver.Chrome()
+        #self.driver = webdriver.PhantomJS()
+        self.driver = webdriver.Chrome()
         print_('selenium driver open browser.')
         PageDriver.__init__(self)
 

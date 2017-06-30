@@ -4,6 +4,8 @@
 import time, pickle, os, re
 from page_driver import RequestsDriver, SeleniumDriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoAlertPresentException
 from miscellaneous import *
 
 class PageNotloaded(Exception):
@@ -56,7 +58,7 @@ class Page:
 
     def is_page(self, page):
         return page.check_enter(self.driver.page_source())
-        
+
     def check_pages(self, pages):
         if not isinstance(pages, list): pages = [pages]
         for page in pages:
@@ -180,42 +182,49 @@ class ListPage(Page):
                 order_item_id = html_attribute(order, '<span', 'data-sku')
                 item_html = self.driver.get_html('http://item.jd.com/%s.html' % str(order_item_id))
                 order_item_name = html_content(item_html, '<title>', '</title>')
-                order_list.append({'id': order_id, 'time': order_time, 'item_id': order_item_id, 'item': order_item_name, 
+                order_list.append({'id': order_id, 'time': order_time, 'item_id': order_item_id, 'item': order_item_name,
                                    'link': order_link, 'name': order_name, 'addr': order_addr, 'phone': order_phone})
             except Exception as e:
                 print_(e)
                 #raise
         return order_list
-        
+
 class CouponPage(Page):
     def __init__(self):
         Page.__init__(self, 'coupon', r'http://quan.jd.com/user_quan.action?couponType=-1&sort=1&page=1')
-        
+
     def init_element(self):
         self.title_identity = chinese('优惠券')
-        
+
     def my_coupons(self):
         pass
-        
+
 class DataPage(Page):
     def __init__(self):
         Page.__init__(self, 'data', r'http://datawallet.jd.com/profile.html')
-        
+
     def init_element(self):
         self.title_identity = chinese('流量加油站')
         self.sign_button = (By.CLASS_NAME, 'btn-sign')
+        self.sign_dialog = (By.CLASS_NAME, 'dialog-sign')
+        self.sign_text = (By.XPATH, '//div[@class="dialog-sign"]/h3')
+        self.sign_ok = (By.CLASS_NAME, 'btn-sign-cancel')
         self.key_input = (By.CLASS_NAME, 'input-key')
         self.key_button = (By.CLASS_NAME, 'btn-key')
         self.key_image = (By.CLASS_NAME, 'userDefinedArea')
-        
+
     def sign(self):
         btn = self.webdriver.find_element(*self.sign_button)
-        if btn.isEnabled(): btn.click()
-        print_('signed data.')
-        alert = self.webdriver.switch_to.alert
-        time.sleep(0.5)
-        print_('alert: %s' % alert.text)
-        alert.dismiss()
+        if btn.is_enabled():
+            btn.click()
+            print_('signed data.')
+            self.driver.wait(10, lambda: EC.presence_of_element_located(self.sign_dialog)(self.webdriver))
+            text = self.webdriver.find_element(*self.sign_text)
+            print_('alert: %s' % text.get_attribute('innerHTML'))
+            btn = self.webdriver.find_element(*self.sign_ok)
+            btn.click()
+        else:
+            print_('data already signed.')
 
     def key(self):
         btn = self.webdriver.find_element(*self.key_button)
@@ -229,6 +238,7 @@ class DataPage(Page):
             links = html_attributes(html, '<img', 'original')
             if len(links) == 1:
                 # save the image????
+                pass
 
 class JD:
     login_page = LoginPage()
@@ -237,9 +247,10 @@ class JD:
     main_page = MainPage()
     coupon_page = CouponPage()
     data_page = DataPage()
-        
+
     def __init__(self):
         self.install_requests_driver()
+        self.install_selenium_driver()
 
     def install_driver(self, pages, driver):
         if not isinstance(pages, list): pages = [pages]
@@ -249,14 +260,14 @@ class JD:
     def install_selenium_driver(self):
         self.selenium_driver = SeleniumDriver()
         self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
-        self.install_driver([self.login_page, self.activ_page, self.main_page], self.selenium_driver)
+        self.install_driver([self.login_page, self.activ_page, self.main_page, self.data_page], self.selenium_driver)
 
     def install_requests_driver(self):
         self.requests_driver = RequestsDriver()
         Page.default_driver(self.requests_driver)
 
     def pre_login(self):
-        if not hasattr(self, 'selenium_driver'): self.install_selenium_driver()
+        #if not hasattr(self, 'selenium_driver'): self.install_selenium_driver()
         self.selenium_driver.invalidate_cookie()
         self.requests_driver.invalidate_cookie()
 

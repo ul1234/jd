@@ -58,7 +58,7 @@ class Account:
     def get_coupons(self):
         self.get(self.jd.coupon_page)
 
-    def sign(self):
+    def data_sign(self):
         self.get(self.jd.data_page)
         self.jd.data_page.sign()
 
@@ -72,5 +72,6 @@ if __name__ == '__main__':
     print user
     #print passwd
     a = Account(user, passwd)
-    a.get_coupons()
-    a.quit()
+    #a.get_coupons()
+    a.data_sign()
+    #a.quit()
