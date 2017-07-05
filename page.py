@@ -288,6 +288,12 @@ class AnyPage(Page):
     def __init__(self):
         Page.__init__(self, 'any', '')
 
+    def get_html(self, url, log_name = ''):
+        html = self.driver.get_html(url)
+        if log_name: self.save(log_name)
+        return html
+        
+        
 class JD:
     login_page = LoginPage()
     activ_page = ActiPage()

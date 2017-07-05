@@ -30,5 +30,11 @@ class Coupon:
         for key, coupon in coupons.items():
             index += 1
             print_('[%d] %s-%s, %s, %s' % (index, coupon['available_price'], coupon['discount_price'], coupon['usage'], coupon['get_url']))
+            
+    def get_server_time(self):
+        # http://a.jd.com/ajax/queryServerData.html?r=0.122334456
+        url = r'http://a.jd.com/ajax/queryServerData.html?r=0.122334456'
+        html = self.jd.page.get_html(url, 'server_time')
+        print html
 
         

@@ -72,7 +72,8 @@ class RequestsDriver(PageDriver):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/54.0.2840.59 Safari/537.36 115Browser/8.0.0',
-            'Accept': 'application / json'
+            'Accept': 'application / json',
+            'Referer': url
         }
         r = self.session.get(url, headers = headers, cookies = self.cookies, verify = False)
         print_('get url [%s] status %d' % (url, r.status_code))
