@@ -1,3 +1,36 @@
 https://github.com/CaoZ/JD-Coin
 
 https://www.mafengwo.cn/i/6842105.html
+
+
+from selenium import webdriver
+import time
+
+driver =webdriver.Firefox(executable_path="/Users/mountain/geckodriver")
+url = "https://passport.zhaopin.com/org/login"
+driver.get(url)
+time.sleep(4)
+
+img_element = driver.find_element_by_class_name("captcha-container")
+
+actions = webdriver.common.action_chains.ActionChains(driver)
+actions.move_to_element_with_offset(img_element, 50, 50).click().perform()
+
+
+actions.move_to_element_with_offset(img_element, 50, 50).click().perform()
+click() is an in-place function, in-place functions behaves as follows:
+
+In [1]: before=[3,4,5]
+In [2]: after=before.append(6)
+In [3]: type(after)
+Out[3]: NoneType
+In [4]: len(before)
+Out[4]: 4
+In [5]: before
+Out[5]: [3, 4, 5, 6]
+instead you should use:
+
+action = actions.move_to_element_with_offset(img_element, 50, 50)
+action.click()
+action.perform()
+here you can find complete explaination: How are Python in-place operator functions different than the standard operator functions?
