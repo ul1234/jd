@@ -3,15 +3,21 @@
 
 import os, re
 
+TEMP_PATH = os.path.join(os.path.dirname(__file__), 'temp')
+
 def print_(str):
     print str
 
 def chinese(word):
     return word.decode('utf-8')
 
+def get_save_path():
+    if not os.path.isdir(TEMP_PATH): os.makedirs(TEMP_PATH)
+    return TEMP_PATH
+
 def clear_save():
-    clear_postfix = ['.html', '.png']
-    folder = os.path.dirname(__file__)
+    clear_postfix = ['.html', '.png', '.jpg']
+    folder = get_save_path()
     files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.splitext(f)[-1] in clear_postfix]
     for f in files:
         os.remove(f)

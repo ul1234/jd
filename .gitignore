@@ -2,6 +2,7 @@
 *.html*
 *.dat
 *.png
+*.jpg
 temp/
 
 # Byte-compiled / optimized / DLL files
