@@ -11,7 +11,7 @@ class Account:
         self.pwd = pwd
         self.rk_user = rk_user
         self.rk_pwd = rk_pwd
-        self.jd = JD()
+        self.jd = JD(user)
         self.coupon = Coupon(self)
         clear_save()
 
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     #raise '1'
     #print passwd
     a = Account(user, passwd)
-    #a.coupon.list_coupons()
-    a.coupon.get_server_time()
+    a.coupon.list_coupons()
+    #a.coupon.get_server_time()
     #a.data_sign()
     #a.quit()

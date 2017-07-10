@@ -303,7 +303,8 @@ class JD:
     data_page = DataPage()
     page = AnyPage()
 
-    def __init__(self):
+    def __init__(self, user):
+        self.user = user
         self.install_requests_driver()
         self.install_selenium_driver()
 
@@ -313,12 +314,12 @@ class JD:
             page.install_driver(driver)
 
     def install_selenium_driver(self):
-        self.selenium_driver = SeleniumDriver()
+        self.selenium_driver = SeleniumDriver(self.user)
         self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
         self.install_driver([self.login_page, self.activ_page, self.main_page, self.data_page], self.selenium_driver)
 
     def install_requests_driver(self):
-        self.requests_driver = RequestsDriver()
+        self.requests_driver = RequestsDriver(self.user)
         Page.default_driver(self.requests_driver)
 
     def pre_login(self):
