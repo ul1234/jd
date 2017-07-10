@@ -3,6 +3,7 @@
 
 import time, pickle, os, re
 from page_driver import RequestsDriver, SeleniumDriver
+from captcha import Captcha
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoAlertPresentException
@@ -21,6 +22,7 @@ class Page:
         self.url = url
         self.save_html = True
         self.save_screen = False
+        self.save_path = get_save_path()
         if hasattr(self, 'init_element'):
             self.init_element()
 
@@ -99,13 +101,13 @@ class Page:
             r = re.search(r'<meta[^>]+charset="?(.*?)"', html)
             charset = 'utf-8' if not r else r.group(1)
             charset_str = '%s (%s)' % (charset, 'detected' if r else 'not detected')
-            f = '%d_%s_%s.html' % (self.save_cnt, self.name, info)
+            f = os.path.join(self.save_path, '%d_%s_%s.html' % (self.save_cnt, self.name, info))
             open(f, 'w').write(html.encode(charset, 'ignore'))
             print_('%s [%s] saved.' % (f, charset_str))
         if self.save_screen:
             if not hasattr(self, 'save_cnt'): self.save_cnt = 0
             self.save_cnt += 1
-            f = '%d_%s_%s.png' % (self.save_cnt, self.name, info)
+            f = os.path.join(self.save_path, '%d_%s_%s.png' % (self.save_cnt, self.name, info))
             self.webdriver.save_screenshot(f)
             print_('%s saved.' % f)
 
@@ -133,7 +135,6 @@ class LoginPage(Page):
     def fill(self, user, pwd):
         self.fill_elements({self.user_element: user, self.pwd_element: pwd})
         #raise Exception('after fill') # for test
-
 
 class ActiPage(Page):
     def __init__(self):
@@ -284,6 +285,35 @@ class DataPage(Page):
                 # save the image????
                 pass
 
+class MobileLoginPage(Page):
+    def __init__(self):
+        Page.__init__(self, 'm_login', r'http://passport.m.jd.com/user/login.action?returnurl=https://m.jd.com?indexloc=1')
+
+    def init_element(self):
+        self.submit_element = (By.ID, 'loginBtn')
+        self.user_element = (By.ID, 'username')
+        self.pwd_element = (By.ID, 'password')
+        self.code_element = (By.ID, 'code')
+        self.code_img = (By.ID, 'imgCode')
+        self.title_identity = chinese('登录')
+
+    def fill(self, user, pwd):
+        self.fill_code()
+        self.fill_elements({self.user_element: user, self.pwd_element: pwd})
+        #raise Exception('after fill') # for test
+
+    def fill_code(self):
+        code_img = self.webdriver.find_element(*self.code_img)
+        code = Captcha().img(self.webdriver, code_img).resolve()
+        self.fill_elements({self.code_element: code})
+
+class MobileMainPage(Page):
+    def __init__(self):
+        Page.__init__(self, 'm_main', 'http://m.jd.com')
+
+    def init_element(self):
+        self.title_identity = chinese('品质保障')
+
 class AnyPage(Page):
     def __init__(self):
         Page.__init__(self, 'any', '')
@@ -292,8 +322,8 @@ class AnyPage(Page):
         html = self.driver.get_html(url)
         if log_name: self.save(log_name)
         return html
-        
-        
+
+
 class JD:
     login_page = LoginPage()
     activ_page = ActiPage()
@@ -302,6 +332,9 @@ class JD:
     coupon_page = CouponPage()
     data_page = DataPage()
     page = AnyPage()
+
+    m_login_page = MobileLoginPage()
+    m_main_page = MobileMainPage()
 
     def __init__(self):
         self.install_requests_driver()
@@ -315,7 +348,7 @@ class JD:
     def install_selenium_driver(self):
         self.selenium_driver = SeleniumDriver()
         self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
-        self.install_driver([self.login_page, self.activ_page, self.main_page, self.data_page], self.selenium_driver)
+        self.install_driver([self.login_page, self.activ_page, self.main_page, self.data_page, self.m_login_page, self.m_main_page], self.selenium_driver)
 
     def install_requests_driver(self):
         self.requests_driver = RequestsDriver()

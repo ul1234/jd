@@ -1,18 +1,51 @@
-# encoding=utf-8
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
+import os
 import Tkinter as tk
 from PIL import ImageTk, Image
+from miscellaneous import *
+
 
 root = tk.Tk(className = 'Captcha')
 root.withdraw()
 
-def manual_captcha(img_file):
-    captcha_text = []    
-    image = Image.open(img_file)
-    img = ImageTk.PhotoImage(image)
-    identify = Identify(root, img, captcha_text)
-    identify.mainloop()
-    return captcha_text[0]
+class CaptchaNotResolved(Exception):
+    pass
+    
+class Captcha:
+    def __init__(self, auto_resolve = False):
+        save_path = get_save_path()
+        self.temp_img_file = os.path.join(save_path, 'all_page.png')
+        self.img_file = os.path.join(save_path, 'code.jpg')
+        self.auto_resolve = auto_resolve
+
+    def resolve(self, img_file = ''):
+        return self.resolve_auto(img_file) if self.auto_resolve else self.resolve_manual(img_file)
+
+    def resolve_auto(self, img_file = ''):
+        raise Exception('TBD')
+
+    def resolve_manual(self, img_file = ''):
+        captcha_text = []
+        image = Image.open(img_file or self.img_file)
+        img = ImageTk.PhotoImage(image)
+        identify = Identify(root, img, captcha_text)
+        identify.mainloop()
+        if not captcha_text: raise CaptchaNotResolved('no captcha resolved.')
+        return captcha_text[0]
+
+    def img(self, webdriver, img_element):
+        location = img_element.location
+        size = img_element.size
+        webdriver.save_screenshot(self.temp_img_file)
+        image = Image.open(self.temp_img_file)
+
+        left, right = location['x'], location['x'] + size['width']
+        top, bottom = location['y'], location['y'] + size['height']
+        image = image.crop((left, top, right, bottom))
+        image.save(self.img_file, 'jpeg')
+        return self
 
 
 class Identify(tk.Toplevel):
@@ -43,4 +76,4 @@ class Identify(tk.Toplevel):
 
 
 if __name__ == '__main__':
-    manual_captcha(r'../temp/2361340.png')
+    print Captcha().resolve(r'temp/2361340.png')

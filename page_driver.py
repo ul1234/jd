@@ -13,11 +13,11 @@ from miscellaneous import *
 class PageDriver:
     def __init__(self):
         self.cookie_loaded = False
-        self.cookie_file = 'cookies.dat'
+        self.cookie_file = os.path.join(get_save_path(), 'cookies.dat')
 
     def title(self, page_html = None):
         html = self.page_source() if page_html is None else page_html
-        return html_content(html, '<title>', '</title>').strip()
+        return html_content(html, '<title>', '</title>').strip().replace('\n', '')
         #r = re.search(r'<title>([^<]+)<', html)
         #if r:
         #    return r.group(1).strip()

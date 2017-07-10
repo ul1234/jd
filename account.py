@@ -47,6 +47,17 @@ class Account:
             print_('login in successfully.')
         self.jd.main_page.driver.save_cookie()
 
+    def m_login(self):
+        self.jd.pre_login()
+
+        self.jd.m_login_page.load(check_cookie = False)
+        self.jd.m_login_page.fill(self.user, self.pwd)
+        self.jd.m_login_page.submit()
+
+        if self.jd.m_main_page.check_load():
+            print_('login in successfully.')
+        self.jd.m_main_page.driver.save_cookie()
+
     def quit(self):
         self.jd.quit()
 
@@ -73,6 +84,7 @@ if __name__ == '__main__':
     #print passwd
     a = Account(user, passwd)
     #a.coupon.list_coupons()
-    a.coupon.get_server_time()
+    #a.coupon.get_server_time()
     #a.data_sign()
     #a.quit()
+    a.m_login()
