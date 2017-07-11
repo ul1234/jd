@@ -11,9 +11,9 @@ from miscellaneous import *
 
 
 class PageDriver:
-    def __init__(self, user):
+    def __init__(self, user, is_mobile = False):
         self.cookie_loaded = False
-        self.cookie_file = os.path.join(get_save_path(), 'cookies_%s.dat' % user)
+        self.cookie_file = os.path.join(get_save_path(), 'cookies_%s%s.dat' % (user, '_m' if is_mobile else ''))
 
     def title(self, page_html = None):
         html = self.page_source() if page_html is None else page_html
@@ -59,11 +59,11 @@ class PageDriver:
         return self.cookie_exist() and not self.cookie_loaded
 
 class RequestsDriver(PageDriver):
-    def __init__(self, user):
+    def __init__(self, user, is_mobile = False):
         self.session = requests.Session()
         self.page_html = None
         self.cookies = {}
-        PageDriver.__init__(self, user)
+        PageDriver.__init__(self, user, is_mobile)
 
     def page_source(self):
         return self.page_html
@@ -95,11 +95,11 @@ class RequestsDriver(PageDriver):
             self.cookies[cookie['name']] = cookie['value']
 
 class SeleniumDriver(PageDriver):
-    def __init__(self, user):
-        self.driver = webdriver.PhantomJS()
-        #self.driver = webdriver.Chrome()
+    def __init__(self, user, is_mobile = False):
+        #self.driver = webdriver.PhantomJS()
+        self.driver = webdriver.Chrome()
         print_('selenium driver open browser.')
-        PageDriver.__init__(self, user)
+        PageDriver.__init__(self, user, is_mobile)
 
     def page_source(self):
         return self.driver.page_source

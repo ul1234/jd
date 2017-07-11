@@ -24,13 +24,13 @@ class Account:
             need_login = True
         except PageNotloaded:
             print_('page [%s] not load.' % page.name)
-            if page.is_page(self.jd.login_page):
+            if self.jd.is_login_page(page):
                 need_login = True
             else:
                 print_('please check the page.')
         if need_login:
             print_('start login...')
-            self.login()
+            self.m_login() if page.is_mobile else self.login()
             self.get(page)
 
     def login(self):
@@ -72,6 +72,9 @@ class Account:
         self.get(self.jd.data_page)
         self.jd.data_page.sign()
 
+    def m_data_sign(self):
+        self.get(self.jd.m_data_page)
+        self.jd.m_data_page.sign()
 
 if __name__ == '__main__':
     try:
@@ -87,4 +90,4 @@ if __name__ == '__main__':
     #a.coupon.get_server_time()
     #a.data_sign()
     #a.quit()
-    a.m_login()
+    a.m_data_sign()

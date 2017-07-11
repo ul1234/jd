@@ -16,19 +16,16 @@ class CookieNotExist(Exception):
     pass
 
 class Page:
-    driver = None
     def __init__(self, name, url):
         self.name = name
         self.url = url
         self.save_html = True
         self.save_screen = False
         self.save_path = get_save_path()
-        if hasattr(self, 'init_element'):
-            self.init_element()
-
-    @staticmethod
-    def default_driver(web_driver):
-        Page.driver = web_driver
+        self.driver = None
+        if not hasattr(self, 'is_mobile_page'): self.is_mobile_page = False
+        if hasattr(self, 'init_element'): self.init_element()
+        All_pages.append(self)
 
     def install_driver(self, page_driver):
         self.driver = page_driver
@@ -116,6 +113,9 @@ class Page:
             elem = self.webdriver.find_element(*element)
             elem.clear()
             elem.send_keys(value)
+
+    def is_mobile(self):
+        return self.is_mobile_page
 
 class LoginPage(Page):
     def __init__(self):
@@ -285,7 +285,12 @@ class DataPage(Page):
                 # save the image????
                 pass
 
-class MobileLoginPage(Page):
+class MobilePage(Page):
+    def __init__(self, name, url):
+        self.is_mobile_page = True
+        Page.__init__(self, name, url)
+
+class MobileLoginPage(MobilePage):
     def __init__(self):
         Page.__init__(self, 'm_login', r'http://passport.m.jd.com/user/login.action?returnurl=https://m.jd.com?indexloc=1')
 
@@ -307,12 +312,49 @@ class MobileLoginPage(Page):
         code = Captcha().img(self.webdriver, code_img).resolve()
         self.fill_elements({self.code_element: code})
 
-class MobileMainPage(Page):
+class MobileMainPage(MobilePage):
     def __init__(self):
         Page.__init__(self, 'm_main', 'http://m.jd.com')
 
     def init_element(self):
         self.title_identity = chinese('品质保障')
+
+class MobileDataPage(MobilePage):
+    def __init__(self):
+        Page.__init__(self, 'm_data', 'https://fbank.m.jd.com/')
+
+    def init_element(self):
+        self.sign_element = (By.XPATH, '//span[text()="%s"]' % chinese('签到'))
+        self.sign_notice = (By.XPATH, '//span[text()="%s"]/following-sibling::span' % chinese('签到'))
+        self.sign_more = (By.XPATH, '//img[1]')
+        self.confirm_element = (By.XPATH, '//div[contains(@data-src, ".png")]')
+        self.title_identity = chinese('流量加油站')
+
+    def sign(self):
+        confirm = self.webdriver.find_element(*self.confirm_element)
+        print confirm.get_attribute('outerHTML')
+        confirm.click()
+        
+        notice = self.webdriver.find_element(*self.sign_notice)
+        print notice.text
+        btn = self.webdriver.find_element(*self.sign_element)
+        #btn.click()
+        print btn.text
+        
+        btn.click()
+        print notice.text
+        
+        more = self.webdriver.find_elements(*self.sign_more)
+        #print more[4].get_attribute('outerHTML')
+        more[4].click()
+        
+
+    def click_by_offset(self):
+        action = webdriver.common.action_chains.ActionChains(driver)
+        action.move_to_element_with_offset(homeLink, 150, 0) #move 150 pixels to the right to access Help link
+        action.click()
+        action.perform()
+
 
 class AnyPage(Page):
     def __init__(self):
@@ -323,6 +365,7 @@ class AnyPage(Page):
         if log_name: self.save(log_name)
         return html
 
+All_pages = []
 
 class JD:
     login_page = LoginPage()
@@ -335,6 +378,7 @@ class JD:
 
     m_login_page = MobileLoginPage()
     m_main_page = MobileMainPage()
+    m_data_page = MobileDataPage()
 
     def __init__(self, user):
         self.user = user
@@ -349,11 +393,18 @@ class JD:
     def install_selenium_driver(self):
         self.selenium_driver = SeleniumDriver(self.user)
         self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
-        self.install_driver([self.login_page, self.activ_page, self.main_page, self.data_page, self.m_login_page, self.m_main_page], self.selenium_driver)
+        self.install_driver([self.login_page, self.activ_page, self.main_page, self.data_page], self.selenium_driver)
+
+        self.mobile_selenium_driver = SeleniumDriver(self.user, is_mobile = True)
+        self.mobile_selenium_driver.install_preload_cookie(lambda: self.m_main_page.pre_load())
+        self.install_driver([self.m_login_page, self.m_main_page, self.m_data_page], self.mobile_selenium_driver)
 
     def install_requests_driver(self):
         self.requests_driver = RequestsDriver(self.user)
-        Page.default_driver(self.requests_driver)
+        self.mobile_requests_driver = RequestsDriver(self.user, is_mobile = True)
+        # default driver
+        for page in All_pages:
+            page.install_driver(self.mobile_requests_driver if page.is_mobile else self.requests_driver)
 
     def pre_login(self):
         #if not hasattr(self, 'selenium_driver'): self.install_selenium_driver()
@@ -363,4 +414,7 @@ class JD:
     def quit(self):
         if hasattr(self, 'selenium_driver'): self.selenium_driver.close()
 
+    def is_login_page(self, page):
+        login_page = self.m_login_page if page.is_mobile else self.login_page
+        return page.is_page(login_page)
 
