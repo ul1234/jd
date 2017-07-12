@@ -96,8 +96,9 @@ class RequestsDriver(PageDriver):
 
 class SeleniumDriver(PageDriver):
     def __init__(self, user, is_mobile = False):
-        #self.driver = webdriver.PhantomJS()
+        #self.driver = webdriver.PhantomJS()  # not work in many situations
         self.driver = webdriver.Chrome()
+        self.driver.set_window_position(-10000,0)  # hide the brower
         print_('selenium driver open browser.')
         PageDriver.__init__(self, user, is_mobile)
 
@@ -125,6 +126,7 @@ class SeleniumDriver(PageDriver):
             self.driver.add_cookie({k: cookie[k] for k in ('name', 'value', 'domain', 'path', 'expiry') if k in cookie})
 
     def close(self):
+        print_('selenium driver close browser.')
         self.driver.quit()
         
     def switch_to_newpage(self):

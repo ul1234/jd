@@ -6,7 +6,8 @@ from page_driver import RequestsDriver, SeleniumDriver
 from captcha import Captcha
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoAlertPresentException
+from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
 from miscellaneous import *
 
 class PageNotloaded(Exception):
@@ -326,35 +327,53 @@ class MobileDataPage(MobilePage):
     def init_element(self):
         self.sign_element = (By.XPATH, '//span[text()="%s"]' % chinese('签到'))
         self.sign_notice = (By.XPATH, '//span[text()="%s"]/following-sibling::span' % chinese('签到'))
-        self.sign_more = (By.XPATH, '//img[1]')
+        self.sign_word_link = (By.XPATH, '//img[1]')
         self.confirm_element = (By.XPATH, '//div[contains(@data-src, ".png")]')
+        self.word_element = (By.XPATH, '//span[contains(text(),"%s")]/following-sibling::span' % chinese('流量口令'))
+        self.word_input = (By.CLASS_NAME, 'liuliang_word')
+        self.submit_word = (By.CLASS_NAME, 'liuliang_check')
+        self.word_data_value = (By.CLASS_NAME, 'liuliang_title_correct_value')
         self.title_identity = chinese('流量加油站')
 
-    def sign(self):
-        confirm = self.webdriver.find_element(*self.confirm_element)
-        print confirm.get_attribute('outerHTML')
-        confirm.click()
-        
-        notice = self.webdriver.find_element(*self.sign_notice)
-        print notice.text
-        btn = self.webdriver.find_element(*self.sign_element)
-        #btn.click()
-        print btn.text
-        
-        btn.click()
-        print notice.text
-        
-        more = self.webdriver.find_elements(*self.sign_more)
-        #print more[4].get_attribute('outerHTML')
-        more[4].click()
-        
-
-    def click_by_offset(self):
-        action = webdriver.common.action_chains.ActionChains(driver)
-        action.move_to_element_with_offset(homeLink, 150, 0) #move 150 pixels to the right to access Help link
+    def click(self, element, offset_xscale = 0.5, offset_yscale = 0.5):
+        #if not hasattr(self, 'action'): self.action = ActionChains(self.webdriver)
+        action = ActionChains(self.webdriver)
+        action.move_to_element_with_offset(element, element.size['width']*offset_xscale, element.size['height']*offset_yscale)
+        action.perform()
         action.click()
         action.perform()
+        action = None
+        time.sleep(0.5)
 
+    def sign(self):
+        try:
+            confirm = self.webdriver.find_element(*self.confirm_element)
+            #print_(confirm.get_attribute('outerHTML'))
+            self.click(confirm, offset_yscale = 0.88)
+        except NoSuchElementException:
+            pass
+        notice = self.webdriver.find_element(*self.sign_notice)
+        btn = self.webdriver.find_element(*self.sign_element)
+        self.click(btn)
+        print_('notice: %s' % notice.text)
+        self.sign_word()
+
+    def sign_word(self):
+        word_link = self.webdriver.find_elements(*self.sign_word_link)[4]
+        #print word_link.get_attribute('outerHTML')
+        self.click(word_link, offset_yscale = 0.1)
+        self.wait_exit()
+        self.save('after_click_word_link')
+        word = self.webdriver.find_element(*self.word_element).get_attribute('innerHTML')
+        print_('word: %s' % word)
+        self.fill_elements({self.word_input: word})
+        self.webdriver.find_element(*self.submit_word).click()
+        time.sleep(1)
+        data_value = self.webdriver.find_element(*self.word_data_value)
+        if data_value.is_displayed():
+            print_('get %s successfully.' % data_value.get_attribute('innerHTML'))
+        else:
+            print_('failed to get data')
 
 class AnyPage(Page):
     def __init__(self):
@@ -413,6 +432,7 @@ class JD:
 
     def quit(self):
         if hasattr(self, 'selenium_driver'): self.selenium_driver.close()
+        if hasattr(self, 'mobile_selenium_driver'): self.mobile_selenium_driver.close()
 
     def is_login_page(self, page):
         login_page = self.m_login_page if page.is_mobile else self.login_page

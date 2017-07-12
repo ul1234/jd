@@ -85,9 +85,12 @@ if __name__ == '__main__':
     print user
     #raise '1'
     #print passwd
-    a = Account(user, passwd)
-    #a.coupon.list_coupons()
-    #a.coupon.get_server_time()
-    #a.data_sign()
-    #a.quit()
-    a.m_data_sign()
+    try:
+        a = Account(user, passwd)
+        #a.coupon.list_coupons()
+        #a.coupon.get_server_time()
+        #a.data_sign()
+        #a.quit()
+        a.m_data_sign()
+    finally:
+        a.quit()
