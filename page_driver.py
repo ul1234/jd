@@ -17,7 +17,8 @@ class PageDriver:
 
     def title(self, page_html = None):
         html = self.page_source() if page_html is None else page_html
-        return html_content(html, '<title>', '</title>').strip().replace('\n', '')
+        return html_content(html, '<title>', '</title>').strip().replace('\n', '')\
+               .replace('\t', '').replace('\r', '').replace(' ', '')
         #r = re.search(r'<title>([^<]+)<', html)
         #if r:
         #    return r.group(1).strip()

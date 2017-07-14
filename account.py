@@ -88,9 +88,9 @@ class Account:
         
     def m_charge_coupon(self):
         self.get(self.jd.m_charge_page)
-        self.jd.m_charge_page.enter_coupon_page()
-        if self.jd.m_get_coupon_page.check_load():
-            self.jd.m_get_coupon_page.get_coupon()
+        coupon_urls = self.jd.m_charge_page.get_coupon_page_urls()
+        for i in [4, 2, 1, 0]:
+            self.jd.m_get_coupon_page.get_coupon(url = coupon_urls[i])
 
 if __name__ == '__main__':
     try:

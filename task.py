@@ -50,6 +50,7 @@ class Task:
 if __name__ == '__main__':
     task = Task()
     # 13917053319, jdcarol0701, jd_5f3fd86191c95
+    #task.do(task.data_sign)
     #task.do(task.data_sign, ['jdcarol0701', 'jd_5f3fd86191c95'])
     task.do(task.charge_coupon, ['13917053319'])
 

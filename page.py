@@ -375,9 +375,9 @@ class MobileDataPage(MobilePage):
         time.sleep(1)
         data_value = self.webdriver.find_element(*self.word_data_value)
         if data_value.is_displayed():
-            print_('get %s successfully.' % data_value.get_attribute('innerHTML'))
+            print_('[Result] Get %s successfully.' % data_value.get_attribute('innerHTML'))
         else:
-            print_('failed to get data')
+            print_('[Result] Failed to get data.')
 
 class MobileChargePage(MobilePage):
     def __init__(self):
@@ -388,12 +388,23 @@ class MobileChargePage(MobilePage):
         self.recharge_banner = (By.XPATH, '//a[contains(@onclick, "MRecharge_Banner")]')
         self.coupon_link = (By.XPATH, '//a[contains(@href, "coupon.m.jd.com")]')
 
-    def enter_coupon_page(self):
+    def get_coupon_page_urls(self):
         banner = self.webdriver.find_element(*self.recharge_banner)
         self.click(banner, offset_yscale = 0.1, wait_exit = True)
         coupon_links = self.webdriver.find_elements(*self.coupon_link)
-        print_('find %d coupons.' % len(coupon_links))
-        self.click(coupon_links[4], wait_exit = True)  # here????????????????
+        coupon_num = len(coupon_links)
+        print_('Find %d coupons.' % coupon_num)
+        coupon_urls = [self._get_coupon_url(i) for i in range(coupon_num)]
+        return coupon_urls
+
+    def _get_coupon_url(self, index = 0):
+        coupon_links = self.webdriver.find_elements(*self.coupon_link)
+        self.click(coupon_links[index], wait_exit = True)
+        coupon_url = self.webdriver.current_url
+        print_('[%d]%s' % (index, coupon_url))
+        self.webdriver.back()
+        return coupon_url
+        
 
 class MobileGetCouponPage(MobilePage):
     def __init__(self):
@@ -418,14 +429,21 @@ class MobileGetCouponPage(MobilePage):
             raise Exception('coupon info not found!')
         return coupon_info
 
-    def get_coupon(self):
+    def _str(self, info):
+        return '%s-%s, %s, %s' % (info['available_price'], info['discount_price'], info['usage'], info['time_range'])
+
+    def get_coupon(self, url = ''):
+        if url: self.driver.get(url)
         coupon_info = self.get_coupon_info()
+        print_('Try to get [%s]' % self._str(coupon_info))
         btn = self.webdriver.find_element(*self.retrieve_button)
-        btn.click()
-        self.wait_element(self.response_element)
-        response = self.webdriver.find_element(*self.response_element).get_attribute('innerHTML')
-        print_('[Response] %s' % response)
-        pause()
+        if chinese('不可领取') in btn.get_attribute('innerHTML'):
+            print_('[Response]Cannot get the coupon. Have to wait.')
+        else:
+            btn.click()
+            self.wait_element(self.response_element)
+            response = self.webdriver.find_element(*self.response_element).get_attribute('innerHTML')
+            print_('[Response]%s' % html_content(response, '<span>', '</span>').strip())
 
 class AnyPage(Page):
     def __init__(self):
