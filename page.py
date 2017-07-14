@@ -87,6 +87,9 @@ class Page:
         self.wait_exit()
         self.save('after_submit')
 
+    def wait_element(self, element, timeout = 10):
+        self.driver.wait(timeout, lambda: EC.presence_of_element_located(element)(self.webdriver))
+
     def enable_save(self, html, screen):
         self.save_html = html
         self.save_screen = screen
@@ -147,7 +150,7 @@ class ActiPage(Page):
         self.title_identity = chinese('激活')
 
     def fill(self):
-        self.driver.wait(10, lambda: EC.presence_of_element_located(self.code_element)(self.webdriver))
+        self.wait_element(self.code_element)
         code = raw_input('Please input the auth code:')
         self.fill_elements({self.code_element: code})
 
@@ -264,7 +267,7 @@ class DataPage(Page):
         if btn.is_enabled():
             btn.click()
             print_('signed data.')
-            self.driver.wait(10, lambda: EC.presence_of_element_located(self.sign_dialog)(self.webdriver))
+            self.wait_element(self.sign_dialog)
             text = self.webdriver.find_element(*self.sign_text)
             print_('alert: %s' % text.get_attribute('innerHTML'))
             btn = self.webdriver.find_element(*self.sign_ok)
@@ -277,7 +280,7 @@ class DataPage(Page):
         btn.click()
         print_('check key page...')
         self.webdriver.switch_to_newpage()
-        self.driver.wait(10, lambda: EC.presence_of_element_located(self.key_image)(self.webdriver))
+        self.wait_element(self.key_image)
         images = self.webdriver.find_elements(*self.key_image)
         for image in images:
             html = image.get_attribute('innerHTML')
@@ -290,6 +293,19 @@ class MobilePage(Page):
     def __init__(self, name, url):
         self.is_mobile_page = True
         Page.__init__(self, name, url)
+
+    def click(self, element, offset_xscale = 0.5, offset_yscale = 0.5, wait_exit = False):
+        #if not hasattr(self, 'action'): self.action = ActionChains(self.webdriver)
+        action = ActionChains(self.webdriver)
+        action.move_to_element_with_offset(element, element.size['width']*offset_xscale, element.size['height']*offset_yscale)
+        action.perform()
+        action.click()
+        action.perform()
+        action = None
+        time.sleep(0.5)
+        if wait_exit:
+            self.wait_exit()
+            self.save('after_click')
 
 class MobileLoginPage(MobilePage):
     def __init__(self):
@@ -335,16 +351,6 @@ class MobileDataPage(MobilePage):
         self.word_data_value = (By.CLASS_NAME, 'liuliang_title_correct_value')
         self.title_identity = chinese('流量加油站')
 
-    def click(self, element, offset_xscale = 0.5, offset_yscale = 0.5):
-        #if not hasattr(self, 'action'): self.action = ActionChains(self.webdriver)
-        action = ActionChains(self.webdriver)
-        action.move_to_element_with_offset(element, element.size['width']*offset_xscale, element.size['height']*offset_yscale)
-        action.perform()
-        action.click()
-        action.perform()
-        action = None
-        time.sleep(0.5)
-
     def sign(self):
         try:
             confirm = self.webdriver.find_element(*self.confirm_element)
@@ -361,9 +367,7 @@ class MobileDataPage(MobilePage):
     def sign_word(self):
         word_link = self.webdriver.find_elements(*self.sign_word_link)[4]
         #print word_link.get_attribute('outerHTML')
-        self.click(word_link, offset_yscale = 0.1)
-        self.wait_exit()
-        self.save('after_click_word_link')
+        self.click(word_link, offset_yscale = 0.1, wait_exit = True)
         word = self.webdriver.find_element(*self.word_element).get_attribute('innerHTML')
         print_('word: %s' % word)
         self.fill_elements({self.word_input: word})
@@ -374,6 +378,54 @@ class MobileDataPage(MobilePage):
             print_('get %s successfully.' % data_value.get_attribute('innerHTML'))
         else:
             print_('failed to get data')
+
+class MobileChargePage(MobilePage):
+    def __init__(self):
+        Page.__init__(self, 'm_charge', 'https://newcz.m.jd.com/')
+
+    def init_element(self):
+        self.title_identity = chinese('充值')
+        self.recharge_banner = (By.XPATH, '//a[contains(@onclick, "MRecharge_Banner")]')
+        self.coupon_link = (By.XPATH, '//a[contains(@href, "coupon.m.jd.com")]')
+
+    def enter_coupon_page(self):
+        banner = self.webdriver.find_element(*self.recharge_banner)
+        self.click(banner, offset_yscale = 0.1, wait_exit = True)
+        coupon_links = self.webdriver.find_elements(*self.coupon_link)
+        print_('find %d coupons.' % len(coupon_links))
+        self.click(coupon_links[4], wait_exit = True)  # here????????????????
+
+class MobileGetCouponPage(MobilePage):
+    def __init__(self):
+        Page.__init__(self, 'm_get_coupon', 'https://coupon.m.jd.com/')
+
+    def init_element(self):
+        self.title_identity = chinese('领取优惠券')
+        self.retrieve_button = (By.ID, 'btnSubmit')
+        self.coupon_info_element = (By.CLASS_NAME, 'mjd-coupon')
+        self.response_element = (By.CLASS_NAME, 'txt-response')
+
+    def get_coupon_info(self):
+        coupon_info_element = self.webdriver.find_element(*self.coupon_info_element)
+        info = coupon_info_element.get_attribute('innerHTML')
+        pattern = r'<strong>(.*?)</strong>.*?<p class="rule">\D*(\d+)\D*</p>.*?<i>(.*?)</i>(.*?)</p>.*?<p class="use-time">(.*?)</p>'
+        r = re.search(pattern, info, flags = re.IGNORECASE|re.DOTALL)
+        if r:
+            discount_price, available_price, type, usage, time_range = [d.strip() for d in r.groups()]
+            coupon_info = {'usage': usage, 'discount_price': discount_price, 'available_price': available_price,
+                           'type': type, 'time_range': time_range}
+        else:
+            raise Exception('coupon info not found!')
+        return coupon_info
+
+    def get_coupon(self):
+        coupon_info = self.get_coupon_info()
+        btn = self.webdriver.find_element(*self.retrieve_button)
+        btn.click()
+        self.wait_element(self.response_element)
+        response = self.webdriver.find_element(*self.response_element).get_attribute('innerHTML')
+        print_('[Response] %s' % response)
+        pause()
 
 class AnyPage(Page):
     def __init__(self):
@@ -398,6 +450,8 @@ class JD:
     m_login_page = MobileLoginPage()
     m_main_page = MobileMainPage()
     m_data_page = MobileDataPage()
+    m_charge_page = MobileChargePage()
+    m_get_coupon_page = MobileGetCouponPage()
 
     def __init__(self, user):
         self.user = user
@@ -416,7 +470,7 @@ class JD:
 
         self.mobile_selenium_driver = SeleniumDriver(self.user, is_mobile = True)
         self.mobile_selenium_driver.install_preload_cookie(lambda: self.m_main_page.pre_load())
-        self.install_driver([self.m_login_page, self.m_main_page, self.m_data_page], self.mobile_selenium_driver)
+        self.install_driver([self.m_login_page, self.m_main_page, self.m_data_page, self.m_charge_page, self.m_get_coupon_page], self.mobile_selenium_driver)
 
     def install_requests_driver(self):
         self.requests_driver = RequestsDriver(self.user)

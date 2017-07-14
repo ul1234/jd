@@ -43,4 +43,5 @@ def html_attributes(html, start_tag, attr):
 def html_attribute(html, start_tag, attr):
     return html_attributes(html, start_tag, attr)[0]
 
-
+def pause():
+    _ = raw_input('pause...')

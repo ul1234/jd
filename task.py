@@ -27,11 +27,13 @@ class Task:
     
     def data_sign(self, account):
         try:
-            #a.coupon.list_coupons()
-            #a.coupon.get_server_time()
-            #a.data_sign()
-            #a.quit()
             account.m_data_sign()
+        finally:
+            account.quit()
+            
+    def charge_coupon(self, account):
+        try:
+            account.m_charge_coupon()
         finally:
             account.quit()
 
@@ -48,7 +50,8 @@ class Task:
 if __name__ == '__main__':
     task = Task()
     # 13917053319, jdcarol0701, jd_5f3fd86191c95
-    task.do(task.data_sign, ['jdcarol0701', 'jd_5f3fd86191c95'])
+    #task.do(task.data_sign, ['jdcarol0701', 'jd_5f3fd86191c95'])
+    task.do(task.charge_coupon, ['13917053319'])
 
 
         

@@ -85,6 +85,12 @@ class Account:
     def m_data_sign(self):
         self.get(self.jd.m_data_page)
         self.jd.m_data_page.sign()
+        
+    def m_charge_coupon(self):
+        self.get(self.jd.m_charge_page)
+        self.jd.m_charge_page.enter_coupon_page()
+        if self.jd.m_get_coupon_page.check_load():
+            self.jd.m_get_coupon_page.get_coupon()
 
 if __name__ == '__main__':
     try:
