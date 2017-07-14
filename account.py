@@ -33,7 +33,16 @@ class Account:
             self.m_login() if page.is_mobile else self.login()
             self.get(page)
 
+    def _check_login_times(self, is_mobile = False):
+        MAX_LOGIN_TIMES = 2
+        login_times = 'm_login_times' if is_mobile else 'login_times'
+        if not hasattr(self, login_times): setattr(self, login_times, 0)
+        t = getattr(self, login_times)
+        setattr(self, login_times, t+1)
+        if t >= MAX_LOGIN_TIMES: raise Exception('cannot login in %d times.' % t)
+
     def login(self):
+        self._check_login_times()
         self.jd.pre_login()
 
         self.jd.login_page.load(check_cookie = False)
@@ -48,6 +57,7 @@ class Account:
         self.jd.main_page.driver.save_cookie()
 
     def m_login(self):
+        self._check_login_times(is_mobile = True)
         self.jd.pre_login()
 
         self.jd.m_login_page.load(check_cookie = False)
