@@ -2,11 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import os, re
+from wx import Wx
 
 TEMP_PATH = os.path.join(os.path.dirname(__file__), 'temp')
 
-def print_(str):
-    print str
+def print_(str, important = False):
+    if important:
+        print str
+    else:
+        print str
 
 def chinese(word):
     return word.decode('utf-8')
