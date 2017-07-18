@@ -69,7 +69,8 @@ class Account:
         self.jd.m_main_page.driver.save_cookie()
 
     def quit(self):
-        self.jd.quit()
+        #self.jd.quit()
+        pass
 
     def get_orders(self):
         self.get(self.jd.list_page)

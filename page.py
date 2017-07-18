@@ -349,6 +349,8 @@ class MobileDataPage(MobilePage):
         self.word_input = (By.CLASS_NAME, 'liuliang_word')
         self.submit_word = (By.CLASS_NAME, 'liuliang_check')
         self.word_data_value = (By.CLASS_NAME, 'liuliang_title_correct_value')
+        #self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com") and contains(@href, "active")]')
+        self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com")]')
         self.title_identity = chinese('流量加油站')
 
     def sign(self):
@@ -361,13 +363,22 @@ class MobileDataPage(MobilePage):
         notice = self.webdriver.find_element(*self.sign_notice)
         btn = self.webdriver.find_element(*self.sign_element)
         self.click(btn)
-        print_('notice: %s' % notice.text)
+        print_('notice: %s' % notice.text, info = True)
         self.sign_word()
 
+    def goto_word_page(self):
+        try:
+            word_element = self.webdriver.find_element(*self.word_element)
+        except NoSuchElementException:
+            goto_word = self.webdriver.find_element(*self.goto_word_link)
+            goto_word.click()
+            time.sleep(1)
+        
     def sign_word(self):
         word_link = self.webdriver.find_elements(*self.sign_word_link)[4]
         #print word_link.get_attribute('outerHTML')
         self.click(word_link, offset_yscale = 0.1, wait_exit = True)
+        self.goto_word_page()  # there's a page sometimes
         word = self.webdriver.find_element(*self.word_element).get_attribute('innerHTML')
         print_('word: %s' % word)
         self.fill_elements({self.word_input: word})
@@ -375,9 +386,9 @@ class MobileDataPage(MobilePage):
         time.sleep(1)
         data_value = self.webdriver.find_element(*self.word_data_value)
         if data_value.is_displayed():
-            print_('[Result] Get %s successfully.' % data_value.get_attribute('innerHTML'))
+            print_('[Result] Get %s successfully.' % data_value.get_attribute('innerHTML'), info = True)
         else:
-            print_('[Result] Failed to get data.')
+            print_('[Result] Failed to get data.', info = True)
 
 class MobileChargePage(MobilePage):
     def __init__(self):
@@ -393,7 +404,7 @@ class MobileChargePage(MobilePage):
         self.click(banner, offset_yscale = 0.1, wait_exit = True)
         coupon_links = self.webdriver.find_elements(*self.coupon_link)
         coupon_num = len(coupon_links)
-        print_('Find %d coupons.' % coupon_num)
+        print_('Find %d coupons.' % coupon_num, info = True)
         coupon_urls = [self._get_coupon_url(i) for i in range(coupon_num)]
         return coupon_urls
 
@@ -438,12 +449,12 @@ class MobileGetCouponPage(MobilePage):
         print_('Try to get [%s]' % self._str(coupon_info))
         btn = self.webdriver.find_element(*self.retrieve_button)
         if chinese('不可领取') in btn.get_attribute('innerHTML'):
-            print_('[Response]Cannot get the coupon. Have to wait.')
+            print_('[Response]Cannot get the coupon. Have to wait.', info = True)
         else:
             btn.click()
             self.wait_element(self.response_element)
             response = self.webdriver.find_element(*self.response_element).get_attribute('innerHTML')
-            print_('[Response]%s' % html_content(response, '<span>', '</span>').strip())
+            print_('[Response]%s' % html_content(response, '<span>', '</span>').strip(), info = True)
 
 class AnyPage(Page):
     def __init__(self):
