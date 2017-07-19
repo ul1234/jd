@@ -29,7 +29,7 @@ class Wx:
     def install_msg_handler(self, func):
         self.msg_handler = func
 
-    @self.bot.register(self.main_friend)
+    #@self.bot.register(self.main_friend)
     def deal_msg(self, msg):
         text = msg.text
         if text.strip().lower().endswith('bot'):
