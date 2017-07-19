@@ -3,39 +3,33 @@
 
 from wxpy import *
 
-class Wx:
-    def __init__(self):
-        self.bot = Bot(cache_path = True, console_qr = True)
-        self.main_friend = ensure_one(self.bot.friends().search('shouliang'))
-        self.msg_handler = None
 
-    def msg_start(self, text):
-        self.msg_save = ''
+bot = None
+main_friend = None
+msg_handler = None
 
-    def msg_interm(self, text):
-        self.msg_save += text + '\n'
+def init():
+    global bot, main_friend
+    bot = Bot(cache_path = True, console_qr = True)
+    main_friend = ensure_one(bot.friends().search('shouliang'))
+    deal_msg = bot.register(main_friend)(deal_msg)
 
-    def msg_end(self, text = ''):
-        self.msg_save += text + '\n'
-        self.msg(self.msg_save)
-        self.msg_save = ''
+def msg(text):
+    if bot:
+        _ = bot.file_helper.send(text)
 
-    def msg(self, text):
-        _ = self.bot.file_helper.send(text)
+def install_msg_handler(func):
+    global msg_handler
+    msg_handler = func
 
-    def log(self, text):
-        self.msg(text)
+#@bot.register(main_friend)
+def deal_msg(msg):
+    text = msg.text
+    if text.strip().lower().endswith('bot'):
+        msg.forward(bot.file_helper, prefix='Bot:')
+        if msg_handler: msg_handler(msg)
 
-    def install_msg_handler(self, func):
-        self.msg_handler = func
+def run_forever():
+    embed()
+    #bot.join()
 
-    #@self.bot.register(self.main_friend)
-    def deal_msg(self, msg):
-        text = msg.text
-        if text.strip().lower().endswith('bot'):
-            msg.forward(self.bot.file_helper, prefix='Bot:')
-            if self.msg_handler: self.msg_handler(msg)
-
-    def run_forever(self):
-        embed()
-        #self.bot.join()

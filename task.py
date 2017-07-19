@@ -9,11 +9,14 @@
 
 from account import Account
 from miscellaneous import *
+import wx
+
 
 class Task:
-    def __init__(self):
+    def __init__(self, wx = False):
         self.users = self.get_users()
         self.task_cnt = 0
+        if wx: wx.init()
 
     def get_users(self):
         users = {}
@@ -41,16 +44,18 @@ class Task:
         user_cnt = 0
         for u, p in self.users.items():
             if not users or u in users:
-                print_('\n\n############ Task %d [%s] User %d [%s] ############\n' % (self.task_cnt, func.__name__, user_cnt, u))
+                print_('\n\n############ Task %d [%s] User %d [%s] ############\n' % (self.task_cnt, func.__name__, user_cnt, u), info = True)
                 acc = Account(u, p)
                 func(acc)
                 user_cnt += 1
+                print_flush()
         self.task_cnt += 1
 
 if __name__ == '__main__':
     task = Task()
     # 13917053319, jdcarol0701, jd_5f3fd86191c95
-    task.do(task.data_sign)
+    #task.do(task.data_sign)
+    task.do(task.data_sign, ['13917053319'])
     #task.do(task.data_sign, ['jdcarol0701', 'jd_5f3fd86191c95'])
     #task.do(task.charge_coupon, ['jdcarol0701'])
 
