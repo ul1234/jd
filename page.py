@@ -121,6 +121,15 @@ class Page:
     def is_mobile(self):
         return self.is_mobile_page
 
+    def scroll_to_end(self):
+        last_height = self.webdriver.execute_script("return document.body.scrollHeight")
+        while True:
+            self.webdriver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(0.1)
+            new_height = self.webdriver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height: break
+            last_height = new_height
+
 class LoginPage(Page):
     def __init__(self):
         Page.__init__(self, 'login', r'https://passport.jd.com/new/login.aspx')
@@ -349,8 +358,8 @@ class MobileDataPage(MobilePage):
         self.word_input = (By.CLASS_NAME, 'liuliang_word')
         self.submit_word = (By.CLASS_NAME, 'liuliang_check')
         self.word_data_value = (By.CLASS_NAME, 'liuliang_title_correct_value')
-        #self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com") and contains(@href, "active")]')
-        self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com")]')
+        self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com") and contains(@href, "active")]')
+        #self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com")]')
         self.title_identity = chinese('流量加油站')
 
     def sign(self):
@@ -370,10 +379,13 @@ class MobileDataPage(MobilePage):
         try:
             word_element = self.webdriver.find_element(*self.word_element)
         except NoSuchElementException:
+            self.scroll_to_end()
+            self.wait_element(self.goto_word_link)
+            #self.save('before_search_go_to_word_driver')
             goto_word = self.webdriver.find_element(*self.goto_word_link)
             goto_word.click()
-            time.sleep(1)
-        
+            time.sleep(0.5)
+
     def sign_word(self):
         word_link = self.webdriver.find_elements(*self.sign_word_link)[4]
         #print word_link.get_attribute('outerHTML')
@@ -415,7 +427,7 @@ class MobileChargePage(MobilePage):
         print_('[%d]%s' % (index, coupon_url))
         self.webdriver.back()
         return coupon_url
-        
+
 
 class MobileGetCouponPage(MobilePage):
     def __init__(self):

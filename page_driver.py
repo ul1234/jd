@@ -104,6 +104,7 @@ class SeleniumDriver(PageDriver):
         PageDriver.__init__(self, user, is_mobile)
 
     def page_source(self):
+        #html = self.driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")
         return self.driver.page_source
 
     def get(self, url):
