@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from page import JD, PageNotloaded, CookieNotExist
+from page import PageNotloaded, CookieNotExist
+from jd import JD
 from miscellaneous import *
 
 class Coupon:
