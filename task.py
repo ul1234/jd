@@ -7,6 +7,8 @@
 # 4. push to the wechat
 # 5. for many users
 
+# 6. sign for many apps
+
 from account import Account
 from miscellaneous import *
 import wx
