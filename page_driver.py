@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time, pickle, os, re, requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -9,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 from miscellaneous import *
 
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class PageDriver:
     def __init__(self, user, is_mobile = False):
@@ -60,7 +62,7 @@ class PageDriver:
         return self.cookie_exist() and not self.cookie_loaded
 
 class RequestsDriver(PageDriver):
-    def __init__(self, user, is_mobile = False):
+    def __init__(self, user = 'requests', is_mobile = False):
         self.session = requests.Session()
         self.page_html = None
         self.cookies = {}
@@ -96,7 +98,7 @@ class RequestsDriver(PageDriver):
             self.cookies[cookie['name']] = cookie['value']
 
 class SeleniumDriver(PageDriver):
-    def __init__(self, user, is_mobile = False):
+    def __init__(self, user = 'selenium', is_mobile = False):
         #self.driver = webdriver.PhantomJS()  # not work in many situations
         self.driver = webdriver.Chrome()
         #self.driver.set_window_position(-10000,0)  # hide the brower
