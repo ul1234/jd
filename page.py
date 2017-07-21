@@ -31,7 +31,7 @@ class Page:
         if hasattr(page_driver, 'driver'):
             self.webdriver = page_driver.driver
 
-    def load(self, check_cookie = True):
+    def load(self, check_cookie = True, show_title = True):
         print_('loading %s: %s' % (self.name, self.url))
         if check_cookie:
             if not self.driver.cookie_exist(): raise CookieNotExist('cookie not found!')
@@ -40,7 +40,9 @@ class Page:
         self.wait_loaded()
         if not self.check_enter(): raise PageNotloaded('page not loaded!')
         if hasattr(self, 'post_load'): self.post_load()
-        print_('entered %s page! title: %s' % (self.name, self.driver.title()))
+        msg = 'entered %s page!' % self.name
+        msg += 'title: %s' % self.driver.title() if show_title else ''
+        print_(msg)
         self.save('after_load')
 
     def pre_load(self):
