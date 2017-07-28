@@ -7,6 +7,11 @@ from page import Page
 from page_driver import RequestsDriver
 from miscellaneous import *
 
+import Tkinter
+import tkMessageBox
+
+root = Tkinter.Tk()
+root.withdraw()
 
 class MonitorPage(Page):
     def __init__(self, url):
@@ -44,7 +49,16 @@ class Monitor:
         msg = ','.join(result[1]) if result[1] else ''
         msg += '[condition triggered!!!]'
         print msg
-        self.MessageBox(msg)
+        #self.MessageBox(msg)
+        self.message(msg)
+
+    def message(self, text, title = 'Monitor'):
+        tkMessageBox.showinfo(title, text)
+        
+        #root.title(title)
+        #Tkinter.Message(root, text = text, bg = 'royalblue', fg = 'ivory', relief = Tkinter.GROOVE).pack(padx = 10, pady = 10)
+        #root.mainloop()
+
 
     def MessageBox(self, text, title = 'Monitor', style = 0):
         from ctypes import windll
@@ -71,5 +85,5 @@ class Monitor:
 
 if __name__ == '__main__':
     m = Monitor()
-    cond = lambda html: m.cond_re(html, chinese('金饭碗福利标(201707210[^1])'))
+    cond = lambda html: m.cond_re(html, chinese('金饭碗福利标(201707220\d)'))
     m.monitor(r'https://www.jfwcaifu.com/loan/category/welfare.html', cond)
