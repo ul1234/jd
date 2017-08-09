@@ -43,6 +43,8 @@ class Captcha:
 
         left, right = location['x'], location['x'] + size['width']
         top, bottom = location['y'], location['y'] + size['height']
+        print (left, top, right, bottom)
+        print location
         image = image.crop((left, top, right, bottom))
         image = image.convert('RGB')
         image.save(self.img_file)

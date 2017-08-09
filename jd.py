@@ -196,8 +196,9 @@ class MobileLoginPage(MobilePage):
 
     def fill_code(self):
         code_img = self.webdriver.find_element(*self.code_img)
-        code = Captcha().img(self.webdriver, code_img).resolve()
-        self.fill_elements({self.code_element: code})
+        if code_img.is_displayed():
+            code = Captcha().img(self.webdriver, code_img).resolve()
+            self.fill_elements({self.code_element: code})
 
 class MobileMainPage(MobilePage):
     def __init__(self):
@@ -214,7 +215,9 @@ class MobileDataPage(MobilePage):
         self.sign_element = (By.XPATH, '//span[text()="%s"]' % chinese('签到'))
         self.sign_notice = (By.XPATH, '//span[text()="%s"]/following-sibling::span' % chinese('签到'))
         self.sign_word_link = (By.XPATH, '//img[1]')
-        self.confirm_element = (By.XPATH, '//div[contains(@data-src, ".png")]')
+        self.confirm_body = (By.XPATH, '//div[contains(@class, "jdreact_dialog_body")]')
+        self.confirm_element = (By.XPATH, '//div[contains(@class, "jdreact_dialog_body")]/following-sibling::div')
+        #self.confirm_element = (By.XPATH, '//div[contains(@data-src, ".png")]')
         self.word_element = (By.XPATH, '//span[contains(text(),"%s")]/following-sibling::span' % chinese('流量口令'))
         self.word_input = (By.CLASS_NAME, 'liuliang_word')
         self.submit_word = (By.CLASS_NAME, 'liuliang_check')
@@ -225,9 +228,15 @@ class MobileDataPage(MobilePage):
 
     def sign(self):
         try:
+            pause()
+            confirm = self.webdriver.find_element(*self.confirm_body)
+            print_(confirm.get_attribute('outerHTML'))
+            pause()
             confirm = self.webdriver.find_element(*self.confirm_element)
-            #print_(confirm.get_attribute('outerHTML'))
+            pause()
+            print_(confirm.get_attribute('outerHTML'))
             self.click(confirm, offset_yscale = 0.88)
+            pause()
         except NoSuchElementException:
             pass
         notice = self.webdriver.find_element(*self.sign_notice)
