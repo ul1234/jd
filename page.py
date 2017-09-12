@@ -12,9 +12,8 @@ class PageNotloaded(Exception):
 class CookieNotExist(Exception):
     pass
 
-All_pages = []
-
 class Page:
+    ALL_PAGES = []
     def __init__(self, name, url):
         self.name = name
         self.url = url
@@ -22,14 +21,18 @@ class Page:
         self.save_screen = False
         self.save_path = get_save_path()
         self.driver = None
+        self.driver_key = 'selenium'
         if not hasattr(self, 'is_mobile_page'): self.is_mobile_page = False
         if hasattr(self, 'init_element'): self.init_element()
-        All_pages.append(self)
+        Page.ALL_PAGES.append(self)
 
-    def install_driver(self, page_driver):
+    def _install_driver(self, page_driver):
         self.driver = page_driver
         if hasattr(page_driver, 'driver'):
             self.webdriver = page_driver.driver
+
+    def install_drivers(self, page_driver_dict):
+        self._install_driver(page_driver_dict[self.driver_key])
 
     def load(self, check_cookie = True, show_title = True):
         print_('loading %s: %s' % (self.name, self.url))

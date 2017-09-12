@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time, re
-from page import Page, MobilePage, All_pages
+from page import Page, MobilePage
 from page_driver import RequestsDriver, SeleniumDriver
 from captcha import Captcha
 from selenium.webdriver.common.by import By
@@ -369,6 +369,12 @@ class JD:
         self.install_requests_driver()
         self.install_selenium_driver()
 
+    def install_drivers(self):
+        self.requests_driver = RequestsDriver(self.user)
+        self.selenium_driver = SeleniumDriver(self.user)
+        self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
+
+
     def install_driver(self, pages, driver):
         if not isinstance(pages, list): pages = [pages]
         for page in pages:
@@ -387,7 +393,7 @@ class JD:
         self.requests_driver = RequestsDriver(self.user)
         self.mobile_requests_driver = RequestsDriver(self.user, is_mobile = True)
         # default driver
-        for page in All_pages:
+        for page in Page.ALL_PAGES:
             page.install_driver(self.mobile_requests_driver if page.is_mobile else self.requests_driver)
 
     def pre_login(self):
