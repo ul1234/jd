@@ -1,21 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from page import PageNotloaded, CookieNotExist
-from jd import JD
-from jd_mobile import JDMobile
+from website import PageNotloaded, CookieNotExist
 from coupon import Coupon
 from miscellaneous import *
 
 class Account:
-    def __init__(self, user, pwd, rk_user = '', rk_pwd = ''):
+    def __init__(self, website, user, pwd, rk_user = '', rk_pwd = ''):
         self.user = user
         self.pwd = pwd
         self.rk_user = rk_user
         self.rk_pwd = rk_pwd
-        self.jd = JD(user)
-        self.jd_mobile = JDMobile(user)
-        self.coupon = Coupon(self)
+        self.website = website(user)
         clear_save()
 
     def get(self, page):
@@ -27,74 +23,37 @@ class Account:
             need_login = True
         except PageNotloaded:
             print_('page [%s] not load.' % page.name)
-            if self.jd.is_login_page(page):
+            if self.website.is_login_page(page):
                 need_login = True
             else:
                 print_('please check the page.')
         if need_login:
             print_('start login...')
-            self.m_login() if page.is_mobile else self.login()
+            self.login()
             self.get(page)
 
-    def _check_login_times(self, is_mobile = False):
-        MAX_LOGIN_TIMES = 2
-        login_times = 'm_login_times' if is_mobile else 'login_times'
-        if not hasattr(self, login_times): setattr(self, login_times, 0)
-        t = getattr(self, login_times)
-        setattr(self, login_times, t+1)
-        if t >= MAX_LOGIN_TIMES: raise Exception('cannot login in %d times.' % t)
-
-    def login(self):
-        self._check_login_times()
-        self.jd.pre_login()
-
-        self.jd.login_page.load(check_cookie = False)
-        self.jd.login_page.fill(self.user, self.pwd)
-        self.jd.login_page.submit()
-
-        if self.jd.activ_page.check_load():
-            self.jd.activ_page.fill()
-            self.jd.activ_page.submit()
-        if self.jd.main_page.check_load():
-            print_('login in successfully.')
-        self.jd.main_page.driver.save_cookie()
-
-    def m_login(self):
-        self._check_login_times(is_mobile = True)
-        self.jd.pre_login()
-
-        self.jd_mobile.login_page.load(check_cookie = False)
-        self.jd_mobile.login_page.fill(self.user, self.pwd)
-        self.jd_mobile.login_page.submit()
-
-        if self.jd_mobile.main_page.check_load():
-            print_('login in successfully.')
-        self.jd_mobile.main_page.driver.save_cookie()
+    def check_login_times(self, max_login_times = 2):
+        if not hasattr(self, 'login_times'): self.login_times = 0
+        if self.login_times >= max_login_times: raise Exception('cannot login in %d times.' % self.login_times)
+        self.login_times += 1
 
     def quit(self):
-        self.jd.quit()
-        #pass
+        self.website.quit()
 
-    def get_orders(self):
-        self.get(self.jd.list_page)
-        orders = self.jd.list_page.my_order()
-        print_('total %d orders.' % len(orders))
-        import pprint
-        pprint.pprint(orders[0])
+    def login(self):
+        self.check_login_times()
+        self.website.pre_login()
 
-    def data_sign(self):
-        self.get(self.jd.data_page)
-        self.jd.data_page.sign()
+        self.website.login_page.load(check_cookie = False)
+        self.website.login_page.fill(self.user, self.pwd)
+        self.website.login_page.submit()
 
-    def m_data_sign(self):
-        self.get(self.jd_mobile.data_page)
-        self.jd_mobile.data_page.sign()
+        if hasattr(self, 'login_next_step'): self.login_next_step()
         
-    def m_charge_coupon(self):
-        self.get(self.jd_mobile.charge_page)
-        coupon_urls = self.jd_mobile.charge_page.get_coupon_page_urls()
-        for i in [4, 2, 1, 0]:
-            self.jd_mobile.get_coupon_page.get_coupon(url = coupon_urls[i])
+        if self.website.main_page.check_load():
+            print_('login in successfully.')
+        self.website.main_page.driver.save_cookie()
+
 
 if __name__ == '__main__':
     try:

@@ -8,6 +8,7 @@ from captcha import Captcha
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException
 from miscellaneous import *
+from account import Account
 
 class LoginPage(Page):
     def __init__(self, website):
@@ -189,5 +190,25 @@ class JD(Website):
 
     def is_login_page(self, page):
         return page.is_page(self.login_page)
+
+class JDAccount(Account):
+    def __init__(self, user, pwd, rk_user = '', rk_pwd = ''):
+        Account.__init__(self, JD, user, pwd, rk_user, rk_pwd)
+
+    def login_next_step(self):
+        if self.website.activ_page.check_load():
+            self.website.activ_page.fill()
+            self.website.activ_page.submit()
+
+    def get_orders(self):
+        self.get(self.website.list_page)
+        orders = self.website.list_page.my_order()
+        print_('total %d orders.' % len(orders))
+        import pprint
+        pprint.pprint(orders[0])
+
+    def data_sign(self):
+        self.get(self.website.data_page)
+        self.website.data_page.sign()
 
     

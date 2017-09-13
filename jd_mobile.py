@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import time, re
-from page import Page, AnyPage
+from website import Page, Website
 from page_driver import RequestsDriver, SeleniumDriver
 from captcha import Captcha
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException
 from miscellaneous import *
+from account import Account
 
 
 class MobilePage(Page):
@@ -196,3 +197,18 @@ class JDMobile(Website):
 
     def is_login_page(self, page):
         return page.is_page(self.login_page)
+
+class JDMobileAccount(Account):
+    def __init__(self, user, pwd, rk_user = '', rk_pwd = ''):
+        Account.__init__(self, JDMobile, user, pwd, rk_user, rk_pwd)
+
+    def data_sign(self):
+        self.get(self.website.data_page)
+        self.website.data_page.sign()
+        
+    def charge_coupon(self):
+        self.get(self.website.charge_page)
+        coupon_urls = self.website.charge_page.get_coupon_page_urls()
+        for i in [4, 2, 1, 0]:
+            self.website.get_coupon_page.get_coupon(url = coupon_urls[i])
+

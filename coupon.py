@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from page import PageNotloaded, CookieNotExist
-from jd import JD
+#from jd import JD
 from miscellaneous import *
 
 class Coupon:

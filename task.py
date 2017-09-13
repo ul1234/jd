@@ -9,7 +9,8 @@
 
 # 6. sign for many apps
 
-from account import Account
+from jd import JDAccount
+from jd_mobile import JDMobileAccount
 from miscellaneous import *
 import wx
 
@@ -31,24 +32,21 @@ class Task:
         return users
     
     def data_sign(self, account):
-        try:
-            account.m_data_sign()
-        finally:
-            account.quit()
+        account.data_sign()
             
     def charge_coupon(self, account):
-        try:
-            account.m_charge_coupon()
-        finally:
-            account.quit()
+        account.charge_coupon()
 
-    def do(self, func, users = []):
+    def do(self, func, account, users = []):
         user_cnt = 0
         for u, p in self.users.items():
             if not users or u in users:
                 print_('\n\n############ Task %d [%s] User %d [%s] ############\n' % (self.task_cnt, func.__name__, user_cnt, u), info = True)
-                acc = Account(u, p)
-                func(acc)
+                acc = account(u, p)
+                try:
+                    func(acc)
+                finally:
+                    acc.quit()
                 user_cnt += 1
                 print_flush()
         self.task_cnt += 1
@@ -58,7 +56,7 @@ if __name__ == '__main__':
     # 13917053319, jdcarol0701, jd_5f3fd86191c95, 15618233071
     #task.do(task.data_sign)
     #task.do(task.data_sign, ['13917053319', 'jdcarol0701', 'jd_5f3fd86191c95'])
-    task.do(task.data_sign, ['jd_5f3fd86191c95'])
+    task.do(task.data_sign, JDAccount, ['jd_5f3fd86191c95'])
     #task.do(task.charge_coupon, ['jdcarol0701'])
 
 
