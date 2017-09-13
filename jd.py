@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import time, re
-from page import Page, MobilePage
+from website import Page, Website
 from page_driver import RequestsDriver, SeleniumDriver
 from captcha import Captcha
 from selenium.webdriver.common.by import By
@@ -10,8 +10,8 @@ from selenium.common.exceptions import NoAlertPresentException, NoSuchElementExc
 from miscellaneous import *
 
 class LoginPage(Page):
-    def __init__(self):
-        Page.__init__(self, 'login', r'https://passport.jd.com/new/login.aspx')
+    def __init__(self, website):
+        Page.__init__(self, website, 'login', r'https://passport.jd.com/new/login.aspx')
         #self.enable_save(True, True)
 
     def init_element(self):
@@ -29,8 +29,8 @@ class LoginPage(Page):
         #raise Exception('after fill') # for test
 
 class ActiPage(Page):
-    def __init__(self):
-        Page.__init__(self, 'activate', '')
+    def __init__(self, website):
+        Page.__init__(self, website, 'activate')
 
     def init_element(self):
         self.submit_element = (By.ID, 'submitBtn')
@@ -44,16 +44,16 @@ class ActiPage(Page):
 
 
 class MainPage(Page):
-    def __init__(self):
-        Page.__init__(self, 'main', 'http://www.jd.com')
+    def __init__(self, website):
+        Page.__init__(self, website, 'main', 'http://www.jd.com')
 
     def init_element(self):
         self.title_identity = chinese('正品低价')
 
 
 class ListPage(Page):
-    def __init__(self):
-        Page.__init__(self, 'list', r'http://order.jd.com/center/list.action')
+    def __init__(self, website):
+        Page.__init__(self, website, 'list', r'http://order.jd.com/center/list.action', driver_key = 'requests')
 
     def init_element(self):
         self.title_identity = chinese('订单')
@@ -83,8 +83,8 @@ class ListPage(Page):
         return order_list
 
 class CouponPage(Page):
-    def __init__(self):
-        Page.__init__(self, 'coupon', r'http://quan.jd.com/user_quan.action?couponType=-1&sort=1&page=1')
+    def __init__(self, website):
+        Page.__init__(self, website, 'coupon', r'http://quan.jd.com/user_quan.action?couponType=-1&sort=1&page=1', driver_key = 'requests')
 
     def init_element(self):
         self.title_identity = chinese('优惠券')
@@ -137,8 +137,8 @@ class CouponPage(Page):
         return coupons_dict
 
 class DataPage(Page):
-    def __init__(self):
-        Page.__init__(self, 'data', r'http://datawallet.jd.com/profile.html')
+    def __init__(self, website):
+        Page.__init__(self, website, 'data', r'http://datawallet.jd.com/profile.html')
 
     def init_element(self):
         self.title_identity = chinese('流量加油站')
@@ -177,234 +177,17 @@ class DataPage(Page):
                 # save the image????
                 pass
 
-class MobileLoginPage(MobilePage):
-    def __init__(self):
-        Page.__init__(self, 'm_login', r'http://passport.m.jd.com/user/login.action?returnurl=https://m.jd.com?indexloc=1')
-
-    def init_element(self):
-        self.submit_element = (By.ID, 'loginBtn')
-        self.user_element = (By.ID, 'username')
-        self.pwd_element = (By.ID, 'password')
-        self.code_element = (By.ID, 'code')
-        self.code_img = (By.ID, 'imgCode')
-        self.title_identity = chinese('登录')
-
-    def fill(self, user, pwd):
-        self.fill_code()
-        self.fill_elements({self.user_element: user, self.pwd_element: pwd})
-        #raise Exception('after fill') # for test
-
-    def fill_code(self):
-        code_img = self.webdriver.find_element(*self.code_img)
-        if code_img.is_displayed():
-            code = Captcha().img(self.webdriver, code_img).resolve()
-            self.fill_elements({self.code_element: code})
-
-class MobileMainPage(MobilePage):
-    def __init__(self):
-        Page.__init__(self, 'm_main', 'http://m.jd.com')
-
-    def init_element(self):
-        self.title_identity = chinese('品质保障')
-
-class MobileDataPage(MobilePage):
-    def __init__(self):
-        Page.__init__(self, 'm_data', 'https://fbank.m.jd.com/')
-
-    def init_element(self):
-        self.sign_element = (By.XPATH, '//span[text()="%s"]' % chinese('签到'))
-        self.sign_notice = (By.XPATH, '//span[text()="%s"]/following-sibling::span' % chinese('签到'))
-        self.sign_word_link = (By.XPATH, '//img[1]')
-        self.confirm_body = (By.XPATH, '//div[contains(@class, "jdreact-dialog-body")]')
-        self.confirm_element = (By.XPATH, '//div[contains(@class, "jdreact-dialog-body")]/div')
-        #self.confirm_element = (By.XPATH, '//div[contains(@data-src, ".png")]')
-        self.word_element = (By.XPATH, '//span[contains(text(),"%s")]/following-sibling::span' % chinese('流量口令'))
-        self.word_input = (By.CLASS_NAME, 'liuliang_word')
-        self.submit_word = (By.CLASS_NAME, 'liuliang_check')
-        self.word_data_value = (By.CLASS_NAME, 'liuliang_title_correct_value')
-        self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com") and contains(@href, "active")]')
-        #self.goto_word_link = (By.XPATH, '//a[contains(@href, "pro.m.jd.com")]')
-        self.title_identity = chinese('流量加油站')
-
-    def sign(self):
-        try:
-            #pause()
-            #confirm = self.webdriver.find_element(*self.confirm_body)
-            #print_(confirm.get_attribute('outerHTML'))
-            #pause()
-            confirm = self.webdriver.find_element(*self.confirm_element)
-            #pause()
-            #print_(confirm.get_attribute('outerHTML'))
-            self.click(confirm, offset_yscale = 0.88)
-            #pause()
-        except NoSuchElementException as e:
-            #pass
-            raise e
-        notice = self.webdriver.find_element(*self.sign_notice)
-        btn = self.webdriver.find_element(*self.sign_element)
-        self.click(btn)
-        print_('notice: %s' % notice.text, info = True)
-        self.sign_word()
-
-    def goto_word_page(self):
-        try:
-            word_element = self.webdriver.find_element(*self.word_element)
-        except NoSuchElementException:
-            self.scroll_to_end()
-            self.wait_element(self.goto_word_link)
-            #self.save('before_search_go_to_word_driver')
-            goto_word = self.webdriver.find_element(*self.goto_word_link)
-            goto_word.click()
-            time.sleep(0.5)
-
-    def sign_word(self):
-        word_link = self.webdriver.find_elements(*self.sign_word_link)[4]
-        #print word_link.get_attribute('outerHTML')
-        self.click(word_link, offset_yscale = 0.1, wait_exit = True)
-        self.goto_word_page()  # there's a page sometimes
-        word = self.webdriver.find_element(*self.word_element).get_attribute('innerHTML')
-        print_('word: %s' % word)
-        self.fill_elements({self.word_input: word})
-        self.webdriver.find_element(*self.submit_word).click()
-        time.sleep(1)
-        data_value = self.webdriver.find_element(*self.word_data_value)
-        if data_value.is_displayed():
-            print_('[Result] Get %s successfully.' % data_value.get_attribute('innerHTML'), info = True)
-        else:
-            print_('[Result] Failed to get data.', info = True)
-
-class MobileChargePage(MobilePage):
-    def __init__(self):
-        Page.__init__(self, 'm_charge', 'https://newcz.m.jd.com/')
-
-    def init_element(self):
-        self.title_identity = chinese('充值')
-        self.recharge_banner = (By.XPATH, '//a[contains(@onclick, "MRecharge_Banner")]')
-        self.coupon_link = (By.XPATH, '//a[contains(@href, "coupon.m.jd.com")]')
-
-    def get_coupon_page_urls(self):
-        banner = self.webdriver.find_element(*self.recharge_banner)
-        self.click(banner, offset_yscale = 0.1, wait_exit = True)
-        coupon_links = self.webdriver.find_elements(*self.coupon_link)
-        coupon_num = len(coupon_links)
-        print_('Find %d coupons.' % coupon_num, info = True)
-        coupon_urls = [self._get_coupon_url(i) for i in range(coupon_num)]
-        return coupon_urls
-
-    def _get_coupon_url(self, index = 0):
-        coupon_links = self.webdriver.find_elements(*self.coupon_link)
-        self.click(coupon_links[index], wait_exit = True)
-        coupon_url = self.webdriver.current_url
-        print_('[%d]%s' % (index, coupon_url))
-        self.webdriver.back()
-        return coupon_url
-
-
-class MobileGetCouponPage(MobilePage):
-    def __init__(self):
-        Page.__init__(self, 'm_get_coupon', 'https://coupon.m.jd.com/')
-
-    def init_element(self):
-        self.title_identity = chinese('领取优惠券')
-        self.retrieve_button = (By.ID, 'btnSubmit')
-        self.coupon_info_element = (By.CLASS_NAME, 'mjd-coupon')
-        self.response_element = (By.CLASS_NAME, 'txt-response')
-
-    def get_coupon_info(self):
-        coupon_info_element = self.webdriver.find_element(*self.coupon_info_element)
-        info = coupon_info_element.get_attribute('innerHTML')
-        pattern = r'<strong>(.*?)</strong>.*?<p class="rule">\D*(\d+)\D*</p>.*?<i>(.*?)</i>(.*?)</p>.*?<p class="use-time">(.*?)</p>'
-        r = re.search(pattern, info, flags = re.IGNORECASE|re.DOTALL)
-        if r:
-            discount_price, available_price, type, usage, time_range = [d.strip() for d in r.groups()]
-            coupon_info = {'usage': usage, 'discount_price': discount_price, 'available_price': available_price,
-                           'type': type, 'time_range': time_range}
-        else:
-            raise Exception('coupon info not found!')
-        return coupon_info
-
-    def _str(self, info):
-        return '%s-%s, %s, %s' % (info['available_price'], info['discount_price'], info['usage'], info['time_range'])
-
-    def get_coupon(self, url = ''):
-        if url: self.driver.get(url)
-        coupon_info = self.get_coupon_info()
-        print_('Try to get [%s]' % self._str(coupon_info))
-        btn = self.webdriver.find_element(*self.retrieve_button)
-        if chinese('不可领取') in btn.get_attribute('innerHTML'):
-            print_('[Response]Cannot get the coupon. Have to wait.', info = True)
-        else:
-            btn.click()
-            self.wait_element(self.response_element)
-            response = self.webdriver.find_element(*self.response_element).get_attribute('innerHTML')
-            print_('[Response]%s' % html_content(response, '<span>', '</span>').strip(), info = True)
-
-class AnyPage(Page):
-    def __init__(self):
-        Page.__init__(self, 'any', '')
-
-    def get_html(self, url, log_name = ''):
-        html = self.driver.get_html(url)
-        if log_name: self.save(log_name)
-        return html
-
-
-class JD:
-    login_page = LoginPage()
-    activ_page = ActiPage()
-    list_page = ListPage()
-    main_page = MainPage()
-    coupon_page = CouponPage()
-    data_page = DataPage()
-    page = AnyPage()
-
-    m_login_page = MobileLoginPage()
-    m_main_page = MobileMainPage()
-    m_data_page = MobileDataPage()
-    m_charge_page = MobileChargePage()
-    m_get_coupon_page = MobileGetCouponPage()
-
+class JD(Website):
     def __init__(self, user):
-        self.user = user
-        self.install_requests_driver()
-        self.install_selenium_driver()
-
-    def install_drivers(self):
-        self.requests_driver = RequestsDriver(self.user)
-        self.selenium_driver = SeleniumDriver(self.user)
-        self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
-
-
-    def install_driver(self, pages, driver):
-        if not isinstance(pages, list): pages = [pages]
-        for page in pages:
-            page.install_driver(driver)
-
-    def install_selenium_driver(self):
-        self.selenium_driver = SeleniumDriver(self.user)
-        self.selenium_driver.install_preload_cookie(lambda: self.main_page.pre_load())
-        self.install_driver([self.login_page, self.activ_page, self.main_page, self.data_page], self.selenium_driver)
-
-        self.mobile_selenium_driver = SeleniumDriver(self.user, is_mobile = True)
-        self.mobile_selenium_driver.install_preload_cookie(lambda: self.m_main_page.pre_load())
-        self.install_driver([self.m_login_page, self.m_main_page, self.m_data_page, self.m_charge_page, self.m_get_coupon_page], self.mobile_selenium_driver)
-
-    def install_requests_driver(self):
-        self.requests_driver = RequestsDriver(self.user)
-        self.mobile_requests_driver = RequestsDriver(self.user, is_mobile = True)
-        # default driver
-        for page in Page.ALL_PAGES:
-            page.install_driver(self.mobile_requests_driver if page.is_mobile else self.requests_driver)
-
-    def pre_login(self):
-        #if not hasattr(self, 'selenium_driver'): self.install_selenium_driver()
-        self.selenium_driver.invalidate_cookie()
-        self.requests_driver.invalidate_cookie()
-
-    def quit(self):
-        if hasattr(self, 'selenium_driver'): self.selenium_driver.close()
-        if hasattr(self, 'mobile_selenium_driver'): self.mobile_selenium_driver.close()
+        Website.__init__(self, 'JD', user)
+        self.login_page = LoginPage(self)
+        self.activ_page = ActiPage(self)
+        self.list_page = ListPage(self)
+        self.main_page = MainPage(self)
+        self.coupon_page = CouponPage(self)
+        self.data_page = DataPage(self)
 
     def is_login_page(self, page):
-        login_page = self.m_login_page if page.is_mobile else self.login_page
-        return page.is_page(login_page)
+        return page.is_page(self.login_page)
+
+    

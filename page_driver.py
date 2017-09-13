@@ -13,9 +13,9 @@ from miscellaneous import *
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class PageDriver:
-    def __init__(self, user, is_mobile = False):
+    def __init__(self, site, user):
         self.cookie_loaded = False
-        self.cookie_file = os.path.join(get_save_path(), 'cookies_%s%s.dat' % (user, '_m' if is_mobile else ''))
+        self.cookie_file = os.path.join(get_save_path(), 'cookies_%s_%s.dat' % (site, user))
 
     def title(self, page_html = None):
         html = self.page_source() if page_html is None else page_html
@@ -62,11 +62,11 @@ class PageDriver:
         return self.cookie_exist() and not self.cookie_loaded
 
 class RequestsDriver(PageDriver):
-    def __init__(self, user = 'requests', is_mobile = False):
+    def __init__(self, site, user = 'requests'):
         self.session = requests.Session()
         self.page_html = None
         self.cookies = {}
-        PageDriver.__init__(self, user, is_mobile)
+        PageDriver.__init__(self, site, user)
 
     def page_source(self):
         return self.page_html
@@ -98,12 +98,12 @@ class RequestsDriver(PageDriver):
             self.cookies[cookie['name']] = cookie['value']
 
 class SeleniumDriver(PageDriver):
-    def __init__(self, user = 'selenium', is_mobile = False):
+    def __init__(self, site, user = 'selenium'):
         #self.driver = webdriver.PhantomJS()  # not work in many situations
         self.driver = webdriver.Chrome()
         #self.driver.set_window_position(-10000,0)  # hide the brower
         print_('selenium driver open browser.')
-        PageDriver.__init__(self, user, is_mobile)
+        PageDriver.__init__(self, site, user)
 
     def page_source(self):
         #html = self.driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")

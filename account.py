@@ -3,6 +3,7 @@
 
 from page import PageNotloaded, CookieNotExist
 from jd import JD
+from jd_mobile import JDMobile
 from coupon import Coupon
 from miscellaneous import *
 
@@ -13,6 +14,7 @@ class Account:
         self.rk_user = rk_user
         self.rk_pwd = rk_pwd
         self.jd = JD(user)
+        self.jd_mobile = JDMobile(user)
         self.coupon = Coupon(self)
         clear_save()
 
@@ -61,13 +63,13 @@ class Account:
         self._check_login_times(is_mobile = True)
         self.jd.pre_login()
 
-        self.jd.m_login_page.load(check_cookie = False)
-        self.jd.m_login_page.fill(self.user, self.pwd)
-        self.jd.m_login_page.submit()
+        self.jd_mobile.login_page.load(check_cookie = False)
+        self.jd_mobile.login_page.fill(self.user, self.pwd)
+        self.jd_mobile.login_page.submit()
 
-        if self.jd.m_main_page.check_load():
+        if self.jd_mobile.main_page.check_load():
             print_('login in successfully.')
-        self.jd.m_main_page.driver.save_cookie()
+        self.jd_mobile.main_page.driver.save_cookie()
 
     def quit(self):
         self.jd.quit()
@@ -85,14 +87,14 @@ class Account:
         self.jd.data_page.sign()
 
     def m_data_sign(self):
-        self.get(self.jd.m_data_page)
-        self.jd.m_data_page.sign()
+        self.get(self.jd_mobile.data_page)
+        self.jd_mobile.data_page.sign()
         
     def m_charge_coupon(self):
-        self.get(self.jd.m_charge_page)
-        coupon_urls = self.jd.m_charge_page.get_coupon_page_urls()
+        self.get(self.jd_mobile.charge_page)
+        coupon_urls = self.jd_mobile.charge_page.get_coupon_page_urls()
         for i in [4, 2, 1, 0]:
-            self.jd.m_get_coupon_page.get_coupon(url = coupon_urls[i])
+            self.jd_mobile.get_coupon_page.get_coupon(url = coupon_urls[i])
 
 if __name__ == '__main__':
     try:
