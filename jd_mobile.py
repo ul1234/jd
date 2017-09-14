@@ -3,10 +3,10 @@
 
 import time, re
 from website import Page, Website
-from page_driver import RequestsDriver, SeleniumDriver
 from captcha import Captcha
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
 from miscellaneous import *
 from account import Account
 
@@ -114,7 +114,7 @@ class DataPage(MobilePage):
         print_('word: %s' % word)
         self.fill_elements({self.word_input: word})
         self.webdriver.find_element(*self.submit_word).click()
-        time.sleep(1)
+        time.sleep(2)
         data_value = self.webdriver.find_element(*self.word_data_value)
         if data_value.is_displayed():
             print_('[Result] Get %s successfully.' % data_value.get_attribute('innerHTML'), info = True)

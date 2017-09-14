@@ -3,7 +3,6 @@
 
 import time, re
 from website import Page, Website
-from page_driver import RequestsDriver, SeleniumDriver
 from captcha import Captcha
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException

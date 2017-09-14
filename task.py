@@ -8,6 +8,7 @@
 # 5. for many users
 
 # 6. sign for many apps
+# 7. too slow for suning main page to fully loaded, try to escape earlier
 
 from jd import JDAccount
 from jd_mobile import JDMobileAccount
@@ -54,7 +55,7 @@ class Task:
 if __name__ == '__main__':
     task = Task()
     # 13917053319, jdcarol0701, jd_5f3fd86191c95, 15618233071
-    #task.do(task.data_sign)
+    #task.do(task.data_sign, JDMobileAccount)
     #task.do(task.data_sign, ['13917053319', 'jdcarol0701', 'jd_5f3fd86191c95'])
     task.do(task.data_sign, JDMobileAccount, ['13917053319'])
     #task.do(task.charge_coupon, ['jdcarol0701'])
