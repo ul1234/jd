@@ -59,6 +59,17 @@ class SuningAccount(Account):
 
     def get_orders(self):
         self.get(self.website.list_page)
+        
+    def get_coupon(self, url, driver_key = 'selenium'):
+        if driver_key == 'requests':
+            html = self.website.requests_page.get_html(url, log_name = 'coupon')
+            # href="//quan.suning.com/.........."
+            pattern = 'href="//(quan.suning.com/.*?)"'
+            r = re.findall(pattern, html)
+        else:
+            self.website.page.get_html(url, log_name = 'coupon')
+            quan_element = (By.XPATH, "//map[@name='quan']/area[1]")
+            self.website.page.find_element(*quan_element).click()
 
 if __name__ == '__main__':
     try:
@@ -77,8 +88,10 @@ if __name__ == '__main__':
         #a.data_sign()
         #a.quit()
         #a.login()
-        a.get_orders()
+        #a.get_orders()
+        a.login()
+        a.get_coupon('https://cuxiao.suning.com/c0912phone.html')
     finally:
-        time.sleep(10)
+        #time.sleep(10)
         a.quit()
 

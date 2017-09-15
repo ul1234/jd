@@ -109,8 +109,14 @@ class SeleniumDriver(PageDriver):
         #html = self.driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")
         return self.driver.page_source
 
-    def get(self, url):
-        self.driver.get(url)
+    def get(self, url, timeout = -1):
+        if timeout >= 0: self.driver.set_page_load_timeout(timeout)
+        try:
+            self.driver.get(url)
+        except TimeoutException as e:
+            print_('Stop loading %s due to %ds timeout.' % (url, timeout))
+        finally:
+            if timeout: self.driver.set_page_load_timeout(-1)   # restore
         #print_('title: %s' % self.title())
 
     def wait(self, timeout, condition_func):

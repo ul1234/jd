@@ -47,7 +47,7 @@ class Page:
 
     def pre_load(self):
         print_('preloading %s: %s' % (self.name, self.url))
-        self.driver.get(self.url)
+        self.driver.get(self.url, timeout = 3)
 
     def check_load(self):
         if not self.check_enter(): return False
