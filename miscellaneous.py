@@ -3,18 +3,18 @@
 
 import os, re
 import wx
+from datetime import datetime
 
 TEMP_PATH = os.path.join(os.path.dirname(__file__), 'temp')
 
 print_buffer = ''
 
-def print_(str, info = False):
+def print_(str, info = False, output_time = False):
     global print_buffer
-    if info:
-        print '%s' % str
-        print_buffer += '%s\n' % str.strip()
-    else:
-        print str
+    time_str = '[%s]' % datetime.now().strftime('%H:%M:%S') if output_time else ''
+    str_ = '%s%s' % (time_str, str)
+    print str_
+    if info: print_buffer += '%s\n' % str_.strip()
 
 def print_flush():
     global print_buffer

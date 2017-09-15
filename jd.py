@@ -167,7 +167,7 @@ class DataPage(Page):
         btn = self.webdriver.find_element(*self.key_button)
         btn.click()
         print_('check key page...')
-        self.webdriver.switch_to_newpage()
+        self.driver.switch_to_newpage()
         self.wait_element(self.key_image)
         images = self.webdriver.find_elements(*self.key_image)
         for image in images:

@@ -140,7 +140,7 @@ class SeleniumDriver(PageDriver):
         self.driver.quit()
         
     def switch_to_newpage(self):
-        self.backup_page_handle = driver.current_window_handle
+        self.backup_page_handle = self.driver.current_window_handle
         new_page_handle = None
         while not new_page_handle:
             for handle in self.driver.window_handles:

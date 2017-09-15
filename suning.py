@@ -61,15 +61,50 @@ class SuningAccount(Account):
         self.get(self.website.list_page)
         
     def get_coupon(self, url, driver_key = 'selenium'):
-        if driver_key == 'requests':
-            html = self.website.requests_page.get_html(url, log_name = 'coupon')
-            # href="//quan.suning.com/.........."
-            pattern = 'href="//(quan.suning.com/.*?)"'
-            r = re.findall(pattern, html)
-        else:
-            self.website.page.get_html(url, log_name = 'coupon')
-            quan_element = (By.XPATH, "//map[@name='quan']/area[1]")
-            self.website.page.find_element(*quan_element).click()
+        page = self.website.requests_page if driver_key == 'requests' else self.website.page
+        html = page.get_html(url, log_name = 'coupon')
+        # href="//quan.suning.com/.........."
+        quan = html_content(html, '<map name="quan"', '</map>')
+        r = re.findall('href="//(quan.suning.com/.*?)"', quan)
+        if not r:
+            print_('No coupon is found! quit...')
+            return
+        #quan_num = len(r)
+        import pprint
+        pprint.pprint(r)
+        pause()
+        quan_num = 1
+        for i in range(quan_num):
+            quan_element = (By.XPATH, "//map[@name='quan']/area[%d]" % (i+1))
+            self.website.page.webdriver.find_element(*quan_element).click()
+            self.website.page.driver.switch_to_newpage()
+            quan_info_element = (By.CLASS_NAME, 'quan-c')
+            print_('start wait...', output_time = True)
+            self.website.page.wait_element(quan_info_element)
+            print_('after wait...', output_time = True)
+            pause()
+            quan_info = self.website.page.webdriver.find_element(*quan_info_element)
+            pprint.pprint(quan_info.get_attribute('innerHTML'))
+            self._parge_coupon_info(quan_info.get_attribute('innerHTML'))
+            pause()
+            self.website.page.driver.switch_back()
+            pause()
+            ########## here ????????
+
+
+    def _parge_coupon_info(self, html):
+        pass
+
+    def _get_coupon_now(self):
+        quan_get_now = (By.ID, 'getCouponNow')
+        quan_goto_use = (By.ID, 'goToUse')
+        quan_get_more = (By.ID, 'getMoreCouponDiv')
+        
+        quan = self.website.page.webdriver.find_element(*quan_get_now)
+        if quan.is_enabled():
+            quan.find_element(By.XPATH, '//a[1]').click()
+            print_('get coupon successfully!')
+
 
 if __name__ == '__main__':
     try:
