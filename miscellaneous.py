@@ -4,10 +4,22 @@
 import os, re
 import wx
 from datetime import datetime
+import pprint
+import HTMLParser
 
 TEMP_PATH = os.path.join(os.path.dirname(__file__), 'temp')
 
 print_buffer = ''
+
+html_parser = None
+
+def unescape(html):
+    global html_parser
+    if not html_parser: html_parser = HTMLParser.HTMLParser()
+    return html_parser.unescape(html)
+
+def p_(str):
+    pprint.pprint(str)
 
 def print_(str, info = False, output_time = False):
     global print_buffer
