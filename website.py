@@ -45,6 +45,14 @@ class Page:
         print_(msg)
         self.save('after_load')
 
+    def get_html(self, url, check_cookie = True,  log_name = ''):
+        if check_cookie:
+            if not self.driver.cookie_exist(): raise CookieNotExist('cookie not found!')
+            if self.driver.should_load_cookie(): self.driver.load_cookie()
+        html = self.driver.get_html(url)
+        if log_name: self.save(log_name, html)
+        return html
+
     def pre_load(self):
         print_('preloading %s: %s' % (self.name, self.url))
         self.driver.get(self.url, timeout = 3)
@@ -129,13 +137,8 @@ class Page:
 
 class AnyPage(Page):
     def __init__(self, website, driver_key = 'selenium'):
-        Page.__init__(self, website, 'any')
-        self.driver_key = driver_key
+        Page.__init__(self, website, 'any', driver_key = driver_key)
 
-    def get_html(self, url, log_name = ''):
-        html = self.driver.get_html(url)
-        if log_name: self.save(log_name)
-        return html
         
 class Website:
     def __init__(self, site, user = 'anonymous'):

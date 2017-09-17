@@ -68,15 +68,15 @@ class SuningAccount(Account):
             return
         coupon_urls = map(unescape, coupon_urls)
         p_(coupon_urls)
-        pause()
+        #pause()
         coupons = []
         for i, u in enumerate(coupon_urls):
             coupon_url = r'https://%s' % u
             html = self.website.requests_page.get_html(coupon_url, log_name = 'check_coupon_%d' % i)
-            info = self._parge_coupon_info(html, i)
+            info = self._parse_coupon_info(html, i)
             if info: coupons.append((info, coupon_url))
         p_(coupons)
-        pause()
+        #pause()
         if not coupon_info:
             get_coupons = coupons
         else:
@@ -94,7 +94,12 @@ class SuningAccount(Account):
                         print_('found coupon for %s.' % str(info))
                     get_coupons += match_coupons
         p_(get_coupons)
-        pause()
+        for info, url in get_coupons:
+            if info.find('Available') >= 0:
+                self._get_coupon_now(url, info)
+                break  # test???
+            else:
+                print_('skip getting coupon, not available: %s' % info)
 
 
 
@@ -123,7 +128,7 @@ class SuningAccount(Account):
             pause()
             quan_info = self.website.page.webdriver.find_element(*quan_info_element)
             pprint.pprint(quan_info.get_attribute('innerHTML'))
-            info = self._parge_coupon_info(quan_info.get_attribute('innerHTML'), i)
+            info = self._parse_coupon_info(quan_info.get_attribute('innerHTML'), i)
             pause()
             self._get_coupon_now(info)
             pause()
@@ -132,38 +137,48 @@ class SuningAccount(Account):
             ########## here ????????
 
 
-    def _parge_coupon_info(self, html, index = 0):
+    def _parse_coupon_info(self, html, index = 0):
         pattern = r'class="price".*?</span>(.*?)</div>.*?<em>\D*(\d+)\D.*?</em>.*?class="quan-body".*?</span>(.*?)</p>.*?</span>(.*?)</p>.*?</span>(.*?)</p>'
         r = re.search(pattern, html, flags = re.IGNORECASE|re.DOTALL)
         if r:
             discount_price, available_price, usage, time_range, get_coupon_time = [d.strip() for d in r.groups()]
             coupon = {'usage': usage, 'discount_price': discount_price, 'available_price': available_price,
                       'time_range': time_range, 'get_coupon_time': get_coupon_time}
+            pattern = r'id="getCouponNow"\s*(style="display:none")?\s*>.*id="goToUse"\s*(style="display:none")?\s*>.*id="getMoreCouponDiv"\s*(style="display:none")?\s*>'
+            stat = re.search(pattern, html, flags = re.IGNORECASE|re.DOTALL)
+            if stat:
+                quan_stat = stat.groups()
+                coupon['stat'] = 'Available' if quan_stat[0] == None else ('Usable' if quan_stat[1] == None else 'SoldOut')
+            else:
+                print_('cannot detect the coupon state, please check')
             p_(r.groups())
             p_(coupon)
-            info_str = '[%d] %s-%s, %s, %s' % (index, coupon['available_price'], coupon['discount_price'], coupon['usage'], coupon['get_coupon_time'])
+            info_str = '[%s] %s-%s, %s, %s' % (coupon['stat'], coupon['available_price'], coupon['discount_price'], coupon['usage'], coupon['get_coupon_time'])
             print_('found coupon! %s' % info_str)
             return info_str
         print_('no valid coupon found!')
         return ''
         
 
-    def _get_coupon_now(self, info = ''):
+    def _get_coupon_now(self, url, info = ''):
+        p_('URL: %s' % url)
+        self.website.page.get_html(url, log_name = 'get_coupon')
+        pause()
         quan_get_now = (By.ID, 'getCouponNow')
         quan_goto_use = (By.ID, 'goToUse')
         quan_get_more = (By.ID, 'getMoreCouponDiv')
-        
         quan_get = self.website.page.webdriver.find_element(*quan_get_now)
         quan_use = self.website.page.webdriver.find_element(*quan_goto_use)
         quan_more = self.website.page.webdriver.find_element(*quan_get_more)
-        print quan_get.is_displayed(), quan_use.is_displayed(), quan_more.is_displayed()
+
         if quan_get.is_displayed():
-            quan_get.find_element(By.XPATH, '//a[1]').click()
+            quan_get.find_element(By.TAG_NAME, 'a').click()
             print_('get coupon successfully! %s' % info)
         elif quan_use.is_displayed():
             print_('you have got the coupon! please use it.')
         elif quan_more.is_displayed():
             print_('you are late, the coupon is sold out.')
+        pause()
 
 
 if __name__ == '__main__':
@@ -185,7 +200,7 @@ if __name__ == '__main__':
         #a.login()
         #a.get_orders()
         a.login()
-        a.get_coupon('https://cuxiao.suning.com/915djpjlzn.html', [(180, chinese('手机')), 800])
+        a.get_coupon('https://cuxiao.suning.com/915djpjlzn.html')
     finally:
         #time.sleep(10)
         a.quit()

@@ -55,9 +55,9 @@ class Task:
 if __name__ == '__main__':
     task = Task()
     # 13917053319, jdcarol0701, jd_5f3fd86191c95, 15618233071
-    #task.do(task.data_sign, JDMobileAccount)
+    task.do(task.data_sign, JDMobileAccount)
     #task.do(task.data_sign, ['13917053319', 'jdcarol0701', 'jd_5f3fd86191c95'])
-    task.do(task.data_sign, JDMobileAccount, ['13917053319'])
+    #task.do(task.data_sign, JDMobileAccount, ['13917053319'])
     #task.do(task.charge_coupon, ['jdcarol0701'])
 
 
