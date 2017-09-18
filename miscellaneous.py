@@ -69,4 +69,11 @@ def html_attribute(html, start_tag, attr):
     return html_attributes(html, start_tag, attr)[0]
 
 def pause():
-    _ = raw_input('pause...')
+    c = raw_input('pause...')
+    if c == 'g':
+        import ipdb
+        ipdb.set_trace()
+    
+def print_element(element):
+    p_('The outerHTML of element:')
+    p_(element.get_attribute('outerHTML'))

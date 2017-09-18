@@ -6,6 +6,7 @@ from website import Page, Website
 from captcha import Captcha
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoAlertPresentException, NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
 from miscellaneous import *
 from account import Account
 
@@ -59,7 +60,7 @@ class SuningAccount(Account):
 
     def get_orders(self):
         self.get(self.website.list_page)
-        
+
     def get_coupon(self, url, coupon_info = []):
         html = self.website.page.get_html(url, log_name = 'coupon')
         coupon_urls = re.findall('href="//(quan.suning.com/.*?activityId.*?)"', html)
@@ -72,7 +73,7 @@ class SuningAccount(Account):
         coupons = []
         for i, u in enumerate(coupon_urls):
             coupon_url = r'https://%s' % u
-            html = self.website.requests_page.get_html(coupon_url, log_name = 'check_coupon_%d' % i)
+            html = self.website.page.get_html(coupon_url, log_name = 'check_coupon_%d' % i)
             info = self._parse_coupon_info(html, i)
             if info: coupons.append((info, coupon_url))
         p_(coupons)
@@ -97,7 +98,7 @@ class SuningAccount(Account):
         for info, url in get_coupons:
             if info.find('Available') >= 0:
                 self._get_coupon_now(url, info)
-                break  # test???
+                #break  # test???
             else:
                 print_('skip getting coupon, not available: %s' % info)
 
@@ -144,13 +145,13 @@ class SuningAccount(Account):
             discount_price, available_price, usage, time_range, get_coupon_time = [d.strip() for d in r.groups()]
             coupon = {'usage': usage, 'discount_price': discount_price, 'available_price': available_price,
                       'time_range': time_range, 'get_coupon_time': get_coupon_time}
-            pattern = r'id="getCouponNow"\s*(style="display:none")?\s*>.*id="goToUse"\s*(style="display:none")?\s*>.*id="getMoreCouponDiv"\s*(style="display:none")?\s*>'
+            pattern = r'id="getCouponNow".*?(display:none)?.*?>.*id="goToUse".*?(display:none)?.*?>.*id="getMoreCouponDiv".*?(display:none)?.*?>'
             stat = re.search(pattern, html, flags = re.IGNORECASE|re.DOTALL)
             if stat:
                 quan_stat = stat.groups()
                 coupon['stat'] = 'Available' if quan_stat[0] == None else ('Usable' if quan_stat[1] == None else 'SoldOut')
             else:
-                print_('cannot detect the coupon state, please check')
+                print_('cannot detect the coupon state, please check pattern.')
             p_(r.groups())
             p_(coupon)
             info_str = '[%s] %s-%s, %s, %s' % (coupon['stat'], coupon['available_price'], coupon['discount_price'], coupon['usage'], coupon['get_coupon_time'])
@@ -158,28 +159,61 @@ class SuningAccount(Account):
             return info_str
         print_('no valid coupon found!')
         return ''
-        
 
     def _get_coupon_now(self, url, info = ''):
+        def do_quan_get_now(element):
+            element.find_element(By.TAG_NAME, 'a').click()
+            #print_('get coupon successfully! %s' % info)
+            self.check_get_result(info)
         p_('URL: %s' % url)
         self.website.page.get_html(url, log_name = 'get_coupon')
         pause()
-        quan_get_now = (By.ID, 'getCouponNow')
-        quan_goto_use = (By.ID, 'goToUse')
-        quan_get_more = (By.ID, 'getMoreCouponDiv')
-        quan_get = self.website.page.webdriver.find_element(*quan_get_now)
-        quan_use = self.website.page.webdriver.find_element(*quan_goto_use)
-        quan_more = self.website.page.webdriver.find_element(*quan_get_more)
-
-        if quan_get.is_displayed():
-            quan_get.find_element(By.TAG_NAME, 'a').click()
-            print_('get coupon successfully! %s' % info)
-        elif quan_use.is_displayed():
-            print_('you have got the coupon! please use it.')
-        elif quan_more.is_displayed():
-            print_('you are late, the coupon is sold out.')
+        quan_get_now = ((By.ID, 'getCouponNow'), do_quan_get_now)
+        quan_goto_use = ((By.ID, 'goToUse'), lambda x: print_('you have got the coupon! please use it.'))
+        quan_get_more = ((By.ID, 'getMoreCouponDiv'), lambda x: print_('you are late, the coupon is sold out.'))
+        self._do_func_if_display([quan_get_now, quan_goto_use, quan_get_more])
         pause()
 
+    def check_get_result(self, info):
+        quan_goto_use = ((By.ID, 'goToUse'), lambda x: print_('get coupon successfully! %s' % info))
+        slide_verify = ((By.ID, 'dt_notice'), lambda x: self.do_slide_verify(x, info))
+        image_verify = ((By.ID, 'imageCodeDiv'), lambda x: print_('image code not supported!'))
+        get_fail = ((By.CLASS_NAME, 'coupon-use'), lambda x: print_('get failed! try it later.'))
+        sms_verify = ((By.CLASS_NAME, 'sms-box'), lambda x: print_('image code not supported!'))
+        self._do_func_if_display([quan_goto_use, slide_verify, get_fail, image_verify, sms_verify])
+
+    def do_slide_verify(self, element, info):
+        location, size = element.location, element.size
+        actions = ActionChains(self.website.page.webdriver)
+        #actions.drag_and_drop_by_offset().perform()
+        #actions.move_to_element_with_offset(element, 0, 0).perform()
+        #actions.click_and_hold().perform()
+        #actions.move_by_offset(size['width'], 0).perform()
+        #actions.release().perform()
+        actions.move_to_element_with_offset(element, 0, 0).click_and_hold().move_by_offset(size['width'], 0).release().perform()
+        time.sleep(0.1)
+        if element.get_attribute('innerHTML').find(chinese('验证通过')) >= 0:
+            ok_btn_element = (By.CLASS_NAME, 'siller-confirm')
+            self.website.page.webdriver.find_element(*ok_btn_element).click()
+            time.sleep(0.1)
+            quan_goto_use = (By.ID, 'goToUse')
+            if self.website.page.webdriver.find_element(*quan_goto_use).is_displayed():
+                print_('get coupon successfully! %s' % info)
+            else:
+                print_('get failed! try it later.')
+                pause()
+        else:
+            print_('get failed! try it later.')
+            pause()
+
+    def _do_func_if_display(self, elements):
+        for e, func in elements:
+            element = self.website.page.webdriver.find_element(*e)
+            if element.is_displayed():
+                func(element)
+                return
+        print_('check display failed! must be an error!')
+        pause()
 
 if __name__ == '__main__':
     try:
@@ -190,7 +224,7 @@ if __name__ == '__main__':
     print user
     #raise '1'
     #print passwd
-    
+
     a = SuningAccount(user, passwd)
     try:
         #a.coupon.list_coupons()
@@ -201,7 +235,9 @@ if __name__ == '__main__':
         #a.get_orders()
         a.login()
         a.get_coupon('https://cuxiao.suning.com/915djpjlzn.html')
+        #a.get_coupon('http://cuxiao.suning.com/cszq911.html?adtype=cpm')
     finally:
         #time.sleep(10)
-        a.quit()
+        #a.quit()
+        pass
 

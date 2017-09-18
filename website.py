@@ -91,6 +91,7 @@ class Page:
 
     def submit(self):
         print_('submitting %s page[%s]...' % (self.name, self.url))
+        time.sleep(1)
         self.webdriver.find_element(*self.submit_element).click()
         self.wait_exit()
         self.save('after_submit')
