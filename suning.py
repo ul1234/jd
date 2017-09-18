@@ -61,82 +61,49 @@ class SuningAccount(Account):
     def get_orders(self):
         self.get(self.website.list_page)
 
-    def get_coupon(self, url, coupon_info = []):
-        html = self.website.page.get_html(url, log_name = 'coupon')
+    def parse_coupon_list_page(self, url):
+        html = self.website.page.get_html(url, log_name = 'coupon_list_page')
         coupon_urls = re.findall('href="//(quan.suning.com/.*?activityId.*?)"', html)
         if not coupon_urls:
-            print_('No coupon is found! quit...')
-            return
+            print_('No coupon list is found! quit...')
+            return []
         coupon_urls = map(unescape, coupon_urls)
-        p_(coupon_urls)
-        #pause()
         coupons = []
         for i, u in enumerate(coupon_urls):
             coupon_url = r'https://%s' % u
             html = self.website.page.get_html(coupon_url, log_name = 'check_coupon_%d' % i)
             info = self._parse_coupon_info(html, i)
             if info: coupons.append((info, coupon_url))
+        print_('All coupons found:')
         p_(coupons)
-        #pause()
-        if not coupon_info:
-            get_coupons = coupons
+        return coupons
+
+    def filter_coupons(self, coupons, coupon_filter = []):
+        if not coupon_filter or not coupons:
+            filtered_coupons = coupons
         else:
-            get_coupons = []
-            for info in coupon_info:
-                if isinstance(info, tuple):
-                    discount, name = info
+            filtered_coupons = []
+            for filter in coupon_filter:
+                if isinstance(filter, tuple):
+                    discount, name = filter
                 else:
-                    discount, name = info, ''
-                match_coupons = [(i, c) for i, c in coupons if i.find('-%s' % discount) >= 0 and i.find(name) >= 0]
+                    discount, name = filter, ''
+                match_coupons = [(i, c) for i, c in coupons if i.find('-%s' % discount) >= 0 and i.find(name) >= 0 and i.find('Available') >= 0]
                 if match_coupons:
                     if len(match_coupons) > 1:
-                        print_('found %d coupons for %s, change or add both.' % (len(match_coupons), str(info)))
-                    else:
-                        print_('found coupon for %s.' % str(info))
-                    get_coupons += match_coupons
-        p_(get_coupons)
-        for info, url in get_coupons:
-            if info.find('Available') >= 0:
-                self._get_coupon_now(url, info)
-                #break  # test???
-            else:
-                print_('skip getting coupon, not available: %s' % info)
+                        print_('found %d coupons for %s, change or add both.' % (len(match_coupons), str(filter)))
+                    #else:
+                    #    print_('found coupon for %s.' % str(filter))
+                    filtered_coupons += match_coupons
+            print_('All filtered available coupons: (by %s)' % str(coupon_filter))
+            p_(filtered_coupons)
+        return filtered_coupons
 
-
-
-
-
-    def get_coupon_1(self, url, coupon_index = [], driver_key = 'selenium'):
-        page = self.website.requests_page if driver_key == 'requests' else self.website.page
-        html = page.get_html(url, log_name = 'coupon')
-        # href="//quan.suning.com/.........."
-        quan = html_content(html, '<map name="\w*quan"', '</map>')
-        r = re.findall('coords="(.*?)"\s*href="(.*?)"', quan)
-        if not r:
-            print_('No coupon is found! quit...')
-            return
-        #quan_num = len(r)
-        import pprint
-        pprint.pprint(r)
-        pause()
-        quan_num = 1
-        for i in range(quan_num):
-            quan_element = (By.XPATH, "//map[@name='quan']/area[%d]" % (i+1))
-            self.website.page.webdriver.find_element(*quan_element).click()
-            self.website.page.driver.switch_to_newpage()
-            quan_info_element = (By.CLASS_NAME, 'quan-c')
-            self.website.page.wait_element(quan_info_element)
-            pause()
-            quan_info = self.website.page.webdriver.find_element(*quan_info_element)
-            pprint.pprint(quan_info.get_attribute('innerHTML'))
-            info = self._parse_coupon_info(quan_info.get_attribute('innerHTML'), i)
-            pause()
-            self._get_coupon_now(info)
-            pause()
-            self.website.page.driver.switch_back()
-            pause()
-            ########## here ????????
-
+    def get_list_page_coupons(self, url, start_time, coupon_filter = []):
+        coupons = self.parse_coupon_list_page(url)
+        filtered_coupons = self.filter_coupons(coupons, coupon_filter)
+        coupon_urls = [url for info, url in filtered_coupons]
+        self.get_coupon(coupon_urls, start_time)
 
     def _parse_coupon_info(self, html, index = 0):
         pattern = r'class="price".*?</span>(.*?)</div>.*?<em>\D*(\d+)\D.*?</em>.*?class="quan-body".*?</span>(.*?)</p>.*?</span>(.*?)</p>.*?</span>(.*?)</p>'
@@ -160,19 +127,21 @@ class SuningAccount(Account):
         print_('no valid coupon found!')
         return ''
 
-    def _get_coupon_now(self, url, info = ''):
+    def get_coupon(self, urls, start_time = None):
         def do_quan_get_now(element):
             element.find_element(By.TAG_NAME, 'a').click()
             #print_('get coupon successfully! %s' % info)
             self.check_get_result(info)
-        p_('URL: %s' % url)
-        self.website.page.get_html(url, log_name = 'get_coupon')
-        pause()
-        quan_get_now = ((By.ID, 'getCouponNow'), do_quan_get_now)
-        quan_goto_use = ((By.ID, 'goToUse'), lambda x: print_('you have got the coupon! please use it.'))
-        quan_get_more = ((By.ID, 'getMoreCouponDiv'), lambda x: print_('you are late, the coupon is sold out.'))
-        self._do_func_if_display([quan_get_now, quan_goto_use, quan_get_more])
-        pause()
+        if not isinstance(urls, list): urls = [urls]
+        for url in urls:
+            p_('URL: %s' % url)
+            self.website.page.get_html(url, log_name = 'get_coupon')
+            pause()
+            quan_get_now = ((By.ID, 'getCouponNow'), do_quan_get_now)
+            quan_goto_use = ((By.ID, 'goToUse'), lambda x: print_('you have got the coupon! please use it.'))
+            quan_get_more = ((By.ID, 'getMoreCouponDiv'), lambda x: print_('you are late, the coupon is sold out.'))
+            self._do_func_if_display([quan_get_now, quan_goto_use, quan_get_more])
+            pause()
 
     def check_get_result(self, info):
         quan_goto_use = ((By.ID, 'goToUse'), lambda x: print_('get coupon successfully! %s' % info))
@@ -234,8 +203,8 @@ if __name__ == '__main__':
         #a.login()
         #a.get_orders()
         a.login()
-        a.get_coupon('https://cuxiao.suning.com/915djpjlzn.html')
-        #a.get_coupon('http://cuxiao.suning.com/cszq911.html?adtype=cpm')
+        a.get_list_page_coupons('https://cuxiao.suning.com/915djpjlzn.html')
+        #a.get_list_page_coupons('http://cuxiao.suning.com/cszq911.html?adtype=cpm')
     finally:
         #time.sleep(10)
         #a.quit()
