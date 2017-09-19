@@ -8,6 +8,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import WebDriverException
 from miscellaneous import *
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -41,6 +42,7 @@ class PageDriver:
 
     def load_cookie(self):
         if hasattr(self, 'preload_cookie'): self.preload_cookie()
+        print_('start to load cookie...')
         if os.path.isfile(self.cookie_file):
             cookies = pickle.load(open(self.cookie_file, 'rb'))
             self.add_cookies(cookies)
@@ -110,13 +112,17 @@ class SeleniumDriver(PageDriver):
         return self.driver.page_source
 
     def get(self, url, timeout = -1):
-        if timeout >= 0: self.driver.set_page_load_timeout(timeout)
+        if timeout >= 0:
+            self.driver.set_page_load_timeout(timeout)
+            print_('set page load timeout to %ds.' % timeout, output_time = True)
         try:
             self.driver.get(url)
         except TimeoutException as e:
             print_('Stop loading %s due to %ds timeout.' % (url, timeout))
         finally:
-            if timeout: self.driver.set_page_load_timeout(-1)   # restore
+            if timeout >= 0:
+                self.driver.set_page_load_timeout(-1)   # restore
+                print_('set page load timeout back to infinite.', output_time = True)
         #print_('title: %s' % self.title())
 
     def wait(self, timeout, condition_func):
@@ -132,8 +138,14 @@ class SeleniumDriver(PageDriver):
 
     def add_cookies(self, cookies):
         for cookie in cookies:
-            #self.driver.add_cookie(cookie)
-            self.driver.add_cookie({k: cookie[k] for k in ('name', 'value', 'domain', 'path', 'expiry') if k in cookie})
+            try:
+                #self.driver.add_cookie(cookie)
+                self.driver.add_cookie({k: cookie[k] for k in ('name', 'value', 'domain', 'path', 'expiry') if k in cookie})
+            except WebDriverException as e:
+                if e.msg.find('invalid cookie domain') >= 0:   # ignore invalid cookie domain
+                    pass
+                else:
+                    raise e
 
     def close(self):
         print_('selenium driver close browser.')

@@ -46,7 +46,7 @@ class ListPage(Page):
 
 class SuNing(Website):
     def __init__(self, user):
-        Website.__init__(self, 'SuNing', user)
+        Website.__init__(self, 'Suning', user)
         self.login_page = LoginPage(self)
         self.main_page = MainPage(self)
         self.list_page = ListPage(self)
@@ -99,7 +99,7 @@ class SuningAccount(Account):
             p_(filtered_coupons)
         return filtered_coupons
 
-    def get_list_page_coupons(self, url, start_time, coupon_filter = []):
+    def get_list_page_coupons(self, url, start_time = None, coupon_filter = []):
         coupons = self.parse_coupon_list_page(url)
         filtered_coupons = self.filter_coupons(coupons, coupon_filter)
         coupon_urls = [url for info, url in filtered_coupons]
@@ -201,12 +201,13 @@ if __name__ == '__main__':
         #a.data_sign()
         #a.quit()
         #a.login()
-        #a.get_orders()
-        a.login()
-        a.get_list_page_coupons('https://cuxiao.suning.com/915djpjlzn.html')
+        a.get_orders()
+        #a.login()
+        #a.get_list_page_coupons('https://cuxiao.suning.com/915djpjlzn.html')
         #a.get_list_page_coupons('http://cuxiao.suning.com/cszq911.html?adtype=cpm')
+        #a.get_list_page_coupons(r'http://cuxiao.suning.com/c0916phone.html?adtype=cpm')
     finally:
         #time.sleep(10)
-        #a.quit()
+        a.quit()
         pass
 
