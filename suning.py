@@ -72,7 +72,7 @@ class SuningAccount(Account):
         for i, u in enumerate(coupon_urls):
             coupon_url = r'https://%s' % u
             html = self.website.page.get_html(coupon_url, log_name = 'check_coupon_%d' % i)
-            info = self._parse_coupon_info(html, i)
+            info = self._parse_coupon_info(html)
             if info: coupons.append((info, coupon_url))
         print_('All coupons found:')
         p_(coupons)
@@ -105,7 +105,7 @@ class SuningAccount(Account):
         coupon_urls = [url for info, url in filtered_coupons]
         self.get_coupon(coupon_urls, start_time)
 
-    def _parse_coupon_info(self, html, index = 0):
+    def _parse_coupon_info(self, html):
         pattern = r'class="price".*?</span>(.*?)</div>.*?<em>\D*(\d+)\D.*?</em>.*?class="quan-body".*?</span>(.*?)</p>.*?</span>(.*?)</p>.*?</span>(.*?)</p>'
         r = re.search(pattern, html, flags = re.IGNORECASE|re.DOTALL)
         if r:
@@ -128,16 +128,18 @@ class SuningAccount(Account):
         return ''
 
     def get_coupon(self, urls, start_time = None):
-        def do_quan_get_now(element):
+        def do_quan_get_now(element, info):
             element.find_element(By.TAG_NAME, 'a').click()
             #print_('get coupon successfully! %s' % info)
+            time.sleep(0.5)
             self.check_get_result(info)
         if not isinstance(urls, list): urls = [urls]
         for url in urls:
             p_('URL: %s' % url)
-            self.website.page.get_html(url, log_name = 'get_coupon')
+            html = self.website.page.get_html(url, log_name = 'get_coupon')
+            info = self._parse_coupon_info(html)
             pause()
-            quan_get_now = ((By.ID, 'getCouponNow'), do_quan_get_now)
+            quan_get_now = ((By.ID, 'getCouponNow'), lambda x: do_quan_get_now(x, info))
             quan_goto_use = ((By.ID, 'goToUse'), lambda x: print_('you have got the coupon! please use it.'))
             quan_get_more = ((By.ID, 'getMoreCouponDiv'), lambda x: print_('you are late, the coupon is sold out.'))
             self._do_func_if_display([quan_get_now, quan_goto_use, quan_get_more])
@@ -201,13 +203,14 @@ if __name__ == '__main__':
         #a.data_sign()
         #a.quit()
         #a.login()
-        a.get_orders()
+        #a.get_orders()
         #a.login()
         #a.get_list_page_coupons('https://cuxiao.suning.com/915djpjlzn.html')
         #a.get_list_page_coupons('http://cuxiao.suning.com/cszq911.html?adtype=cpm')
         #a.get_list_page_coupons(r'http://cuxiao.suning.com/c0916phone.html?adtype=cpm')
+        a.get_list_page_coupons(r'https://shop.suning.com/70086258/10107899.html', [300])
     finally:
         #time.sleep(10)
-        a.quit()
+        #a.quit()
         pass
 

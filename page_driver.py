@@ -118,6 +118,7 @@ class SeleniumDriver(PageDriver):
         try:
             self.driver.get(url)
         except TimeoutException as e:
+            self.driver.execute_script('window.stop();');
             print_('Stop loading %s due to %ds timeout.' % (url, timeout))
         finally:
             if timeout >= 0:
