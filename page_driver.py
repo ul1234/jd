@@ -101,8 +101,8 @@ class RequestsDriver(PageDriver):
 
 class SeleniumDriver(PageDriver):
     def __init__(self, site, user = 'selenium'):
-        #self.driver = webdriver.PhantomJS()  # not work in many situations
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.PhantomJS()  # not work in many situations
+        #self.driver = webdriver.Chrome()
         #self.driver.set_window_position(-10000,0)  # hide the brower
         print_('selenium driver open browser.')
         PageDriver.__init__(self, site, user)
