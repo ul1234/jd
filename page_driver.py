@@ -80,9 +80,9 @@ class RequestsDriver(PageDriver):
             'Accept': 'application / json',
             'Referer': url
         }
-        r = self.session.get(url, headers = headers, cookies = self.cookies, verify = False)
-        print_('get url [%s] status %d' % (url, r.status_code))
-        self.page_html = r.text
+        rsp = self.session.get(url, headers = headers, cookies = self.cookies, verify = False)
+        print_('get url [%s] status %d' % (url, rsp.status_code))
+        self.page_html = rsp.text
         #print_('title: %s' % self.title())
 
     def wait(self, timeout, condition_func):
@@ -101,8 +101,8 @@ class RequestsDriver(PageDriver):
 
 class SeleniumDriver(PageDriver):
     def __init__(self, site, user = 'selenium'):
-        #self.driver = webdriver.PhantomJS()  # not work in many situations
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.PhantomJS()  # not work in many situations
+        #self.driver = webdriver.Chrome()
         #self.driver.set_window_position(-10000,0)  # hide the brower
         print_('selenium driver open browser.')
         PageDriver.__init__(self, site, user)
@@ -169,3 +169,27 @@ class SeleniumDriver(PageDriver):
             self.driver.switch_to.window(self.backup_page_handle)
             self.backup_page_handle = None
             print_('switch back the page.')
+
+    def phantomjs_click(self, element):
+        js = '''
+        var page = require('webpage').create();
+        page.evaluate(function () {
+            var event = document.createEvent('MouseEvents');
+            event.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+            arguments[0].dispatchEvent(event);
+            });
+        console.log(arguments[0]);'''
+
+        js = '''
+        var event = document.createEvent('MouseEvents');
+            event.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+            arguments[0].dispatchEvent(event);
+            console.log(arguments[0]);
+            '''
+        self.driver.execute_script(js, element)
+        time.sleep(0.5)
+        #self.driver.execute_script("arguments[0].click();", element)
+        #var event = document.createEvent('MouseEvents');event.initMouseEvent('mouseup', true, true, window, 0, 302, 437, 162, 294, false, false, false, false, 0, null);arguments[0].dispatchEvent(event);alert(event);
+
+
+

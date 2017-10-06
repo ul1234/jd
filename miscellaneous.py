@@ -69,7 +69,7 @@ def html_attribute(html, start_tag, attr):
     return html_attributes(html, start_tag, attr)[0]
 
 def pause():
-    c = raw_input('pause...')
+    c = raw_input('pause... (Press g for pdb, others continue)')
     if c == 'g':
         import ipdb
         ipdb.set_trace()
