@@ -7,14 +7,14 @@ from PIL import ImageTk, Image
 from miscellaneous import *
 
 
-root = tk.Tk(className = 'Captcha')
-root.withdraw()
-
 class CaptchaNotResolved(Exception):
     pass
     
 class Captcha:
-    def __init__(self, auto_resolve = False):
+    def __init__(self, auto_resolve = False, no_gui = True):
+        if not no_gui:
+            root = tk.Tk(className = 'Captcha')
+            root.withdraw()
         save_path = get_save_path()
         self.temp_img_file = os.path.join(save_path, 'all_page.png')
         self.img_file = os.path.join(save_path, 'code.jpg')
