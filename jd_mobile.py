@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import time, re
+import time, re, random, json
 from website import Page, Website
 from captcha import Captcha
 from selenium.webdriver.common.by import By
@@ -13,13 +13,22 @@ from account import Account
 
 class MobilePage(Page):
     def click(self, element, offset_xscale = 0.5, offset_yscale = 0.5, wait_exit = False):
-        #if not hasattr(self, 'action'): self.action = ActionChains(self.webdriver)
-        action = ActionChains(self.webdriver)
-        action.move_to_element_with_offset(element, element.size['width']*offset_xscale, element.size['height']*offset_yscale)
-        action.perform()
-        action.click()
-        action.perform()
-        action = None
+        #if self.webdriver.name == 'phantomjs':
+        if 0:
+            try:
+                self.webdriver.phantomjs_click(element)
+                element.click()
+                #element.click()
+            except:
+                pass
+        else:
+            #if not hasattr(self, 'action'): self.action = ActionChains(self.webdriver)
+            action = ActionChains(self.webdriver)
+            action.move_to_element_with_offset(element, element.size['width']*offset_xscale, element.size['height']*offset_yscale)
+            action.perform()
+            action.click()
+            action.perform()
+            action = None
         time.sleep(0.5)
         if wait_exit:
             self.wait_exit()
@@ -85,20 +94,29 @@ class DataPage(MobilePage):
             #print_(confirm.get_attribute('outerHTML'))
             self.click(confirm, offset_yscale = 0.88)
             #pause()
+            #pause()
         except NoSuchElementException as e:
-            #pass
-            raise e
+            print_('no confirm element found! pass...')
+            pass
+            #raise e
         notice = self.webdriver.find_element(*self.sign_notice)
         btn = self.webdriver.find_element(*self.sign_element)
+        #pause()
         self.click(btn)
         print_('notice: %s' % notice.text, info = True)
+        self.goto_word_page()
         self.sign_word()
+        pause()
 
     def goto_word_page(self):
+        word_link = self.webdriver.find_elements(*self.sign_word_link)[4]
+        #print word_link.get_attribute('outerHTML')
+        pause()
+        self.click(word_link, offset_yscale = 0.1, wait_exit = True)
         try:
             word_element = self.webdriver.find_element(*self.word_element)
         except NoSuchElementException:
-            self.scroll_to_end()
+            self.scroll_to_end()        # there's a page sometimes
             self.wait_element(self.goto_word_link)
             #self.save('before_search_go_to_word_driver')
             goto_word = self.webdriver.find_element(*self.goto_word_link)
@@ -106,10 +124,6 @@ class DataPage(MobilePage):
             time.sleep(0.5)
 
     def sign_word(self):
-        word_link = self.webdriver.find_elements(*self.sign_word_link)[4]
-        #print word_link.get_attribute('outerHTML')
-        self.click(word_link, offset_yscale = 0.1, wait_exit = True)
-        self.goto_word_page()  # there's a page sometimes
         word = self.webdriver.find_element(*self.word_element).get_attribute('innerHTML')
         print_('word: %s' % word)
         self.fill_elements({self.word_input: word})
@@ -186,6 +200,55 @@ class GetCouponPage(MobilePage):
             response = self.webdriver.find_element(*self.response_element).get_attribute('innerHTML')
             print_('[Response]%s' % html_content(response, '<span>', '</span>').strip(), info = True)
 
+class JsonPage(MobilePage):
+    def __init__(self, website):
+        Page.__init__(self, website, 'jsonp', r'https://api.m.jd.com', driver_key = 'requests')
+        # https://api.m.jd.com/client.action?functionId=getFbankIndex&body=%7B%7D&client=ld&clientVersion=1.0.0&jsonp=jsonp_1507223536611_17111
+        self.jd_api = r'https://api.m.jd.com/client.action?functionId=%s&body=%%7B%%7D&client=ld&clientVersion=1.0.0&jsonp=%s'
+        self.data_info_id = 'getFbankIndex'
+        self.data_sign_id = 'fBankSign'
+
+    def _get_json(self, function_id):
+        timestamp = int(time.time())
+        temp = random.randint(10**4,10**5-1)
+        jsonp_str = 'jsonp_%d_%d' % (timestamp, temp)
+        api = self.jd_api % (function_id, jsonp_str)
+        html = self.get_html(api, log_name = function_id)
+        content = re.search(r'%s\((.*?)\)' % jsonp_str, html)
+        if not content:
+            print_('Error json response: %s' % html)
+            return ''
+        else:
+            return json.loads(content.group(1))
+
+    def data_info(self):
+        response = self._get_json(self.data_info_id)
+        #p_(response)
+        sign_info = response['signInfo']
+        sign_code, sign_message = int(sign_info['signCode']), sign_info['message']
+        signed = (sign_code == 403)
+        print_('Signed %s [%s].' % ('OK' if signed else 'FAIL', sign_message))
+        channel_conf = response['channelConf']
+        urls = [conf['url'] for conf in channel_conf if conf['name'] == chinese('口令流量')]
+        if not urls: raise Exception('cannot find url for data more page.')
+        data_more_url = urls[0]
+        return signed, data_more_url
+
+    def _data_sign(self):
+        response = self._get_json(self.data_sign_id)
+        #p_(response)
+        code = int(response['errorCode'])
+        sign_message = response['errorMessage'] or response['message']
+        signed = (code != 302)
+        print_('Signed %s [%s].' % ('OK' if signed else 'FAIL', sign_message))
+        return signed
+
+    def data_sign(self):
+        signed, data_more_url = self.data_info()
+        if not signed: self._data_sign()
+        self.website.data_page.get_html(data_more_url, log_name = 'data_more')
+        self.website.data_page.sign_word()
+
 class JDMobile(Website):
     def __init__(self, user):
         Website.__init__(self, 'JD_mobile', user)
@@ -194,6 +257,7 @@ class JDMobile(Website):
         self.data_page = DataPage(self)
         self.charge_page = ChargePage(self)
         self.get_coupon_page = GetCouponPage(self)
+        self.json_page = JsonPage(self)
 
     def is_login_page(self, page):
         return page.is_page(self.login_page)
@@ -203,8 +267,9 @@ class JDMobileAccount(Account):
         Account.__init__(self, JDMobile, user, pwd, rk_user, rk_pwd)
 
     def data_sign(self):
-        self.get(self.website.data_page)
-        self.website.data_page.sign()
+        #self.get(self.website.data_page)
+        #self.website.data_page.sign()
+        self.website.json_page.data_sign()
         
     def charge_coupon(self):
         self.get(self.website.charge_page)
