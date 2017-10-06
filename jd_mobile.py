@@ -237,9 +237,8 @@ class JsonPage(MobilePage):
     def _data_sign(self):
         response = self._get_json(self.data_sign_id)
         #p_(response)
-        code = int(response['errorCode'])
         sign_message = response['errorMessage'] or response['message']
-        signed = (code != 302)
+        signed = ('errorCode' not in response) or (int(response['errorCode']) != 302)
         print_('Signed %s [%s].' % ('OK' if signed else 'FAIL', sign_message))
         return signed
 
