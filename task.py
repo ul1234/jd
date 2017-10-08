@@ -16,6 +16,60 @@ from miscellaneous import *
 import wx
 
 
+class TaskList:
+    def __init__(self):
+        self.wait_task = [] 
+        self.running_task = [] 
+
+    def add_task(self, task):
+        self.task_list.append(task)
+        
+    def run_task(self, _task):
+        t = _task[0]
+        t.state = 'running'
+        self._run_task()
+
+    def _run_task(self, task):
+        task.run()
+
+    def log(self, message):
+        open(self.log_file, 'a').write(message + '\n')
+
+    def run_forever(self):
+        while True:
+            for i, t in enumerate(self.wait_task):
+                now = time.time()
+                if ((t.next_start_time - now) < 60):
+                    task_state = []
+                    self.running_task.append(t)
+                    del self.wait_task[i]
+                    self.run_task([t])
+            for i, t in enumerate(self.running_task):
+               if t.state == 'finish':
+                   del self.running_task[i]
+               elif t.state == 'wait':
+                   del self.running_task[i]
+                   self.wait_task.append(t)
+            time.sleep(30)
+
+
+class Task1:
+    def __init__(self, name, account, priority = 'low'):
+        self.account = account
+        self.priority = priority
+
+    def load_config(self, config_file):
+        pass
+
+    def save_config(self, save_file):
+        pass
+
+    def prepare(self):
+        pass
+
+    def do(self):
+        pass
+
 class Task:
     def __init__(self, wx = False):
         self.users = self.get_users()
