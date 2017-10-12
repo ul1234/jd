@@ -4,7 +4,7 @@
 import os, re
 import wx
 from datetime import datetime
-import pprint
+import pprint, threading
 import HTMLParser
 
 TEMP_PATH = os.path.join(os.path.dirname(__file__), 'temp')
@@ -17,6 +17,16 @@ def unescape(html):
     global html_parser
     if not html_parser: html_parser = HTMLParser.HTMLParser()
     return html_parser.unescape(html)
+
+def thread_func(time_delay = 0.01):
+    def _thread_func(func):
+        def __thread_func(*args, **kwargs):
+            def _func(*args):
+                time.sleep(time_delay)
+                func(*args, **kwargs)
+            threading.Thread(target = _func, args = tuple(args)).start()
+        return __thread_func
+    return _thread_func
 
 def p_(str):
     pprint.pprint(str)

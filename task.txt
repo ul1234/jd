@@ -1,0 +1,15 @@
+[JD data Sign]
+type = sign
+time = 00:05
+day = everyday
+priority = medium
+account = 'user.dat'
+
+[Suning coupon]
+type = seckill
+time = [00:00, 08:00, 10:00]
+day = 2017-10-10
+priority = high
+account = 'user2.dat'
+url = ''
+

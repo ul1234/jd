@@ -13,7 +13,7 @@
 from jd import JDAccount
 from jd_mobile import JDMobileAccount
 from miscellaneous import *
-import wx
+import wx, ConfigParser
 
 
 class TaskList:
@@ -21,17 +21,17 @@ class TaskList:
         self.wait_task = [] 
         self.running_task = [] 
 
+    def load_tasks(self):
+        if not hasattr(self, 'ini'): self.ini = ConfigParser.ConfigParser()
     def add_task(self, task):
         self.task_list.append(task)
         
+    @thread_func()
     def run_task(self, _task):
         t = _task[0]
         t.state = 'running'
-        self._run_task()
-
-    def _run_task(self, task):
-        task.run()
-
+        t.run()
+            
     def log(self, message):
         open(self.log_file, 'a').write(message + '\n')
 
@@ -50,16 +50,24 @@ class TaskList:
                elif t.state == 'wait':
                    del self.running_task[i]
                    self.wait_task.append(t)
+               
             time.sleep(30)
 
 
 class Task1:
-    def __init__(self, name, account, priority = 'low'):
+    def __init__(self, name, account, day, start_time, priority = 'low'):
+        self.name = name
+        self.next_start_time = 0 
         self.account = account
         self.priority = priority
+        self.config_file = 'task.ini'
 
-    def load_config(self, config_file):
-        pass
+    def load_config(self):
+        self.ini.read(self.config_file)
+        if not self.name in self.ini.sections():
+            print_('no task [%s] found!' % self.name)
+            return []
+        items = self.ini.items(name)
 
     def save_config(self, save_file):
         pass
@@ -67,8 +75,25 @@ class Task1:
     def prepare(self):
         pass
 
+    def run(self):
+        while time.time() < self.next_start_time:
+            time.sleep(0.1)
+        self.do()
+
+class SignTask(Task1):
+    def __init__(self, name, account):
+        start_time = '00:05'
+        day = 'everyday'
+        priority = 'low'
+        Task1.__init__(self, name, account, day, start_time, priority)
+
+
+class JDDataSignTask(Task1):
+    def __init__(self, account):
+        self.account = account
+
     def do(self):
-        pass
+       self.account.data_sign()
 
 class Task:
     def __init__(self, wx = False):
