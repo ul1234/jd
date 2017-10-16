@@ -166,7 +166,10 @@ class Website:
         self.requests_driver.invalidate_cookie()
 
     def quit(self):
-        if hasattr(self, 'selenium_driver'): self.selenium_driver.close()
-        if hasattr(self, 'mobile_selenium_driver'): self.mobile_selenium_driver.close()
+        try:
+            if hasattr(self, 'selenium_driver'): self.selenium_driver.close()
+        except Exception as e:
+            print_(e) 
+            pass
         
 

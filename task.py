@@ -21,10 +21,31 @@ class TaskList:
         self.wait_task = [] 
         self.running_task = [] 
 
+    def add_task(self, task_class, users = []):
+        user_file = task_class.USER_FILE
+        users = self.get_users(user_file) 
+        for u, p in users.items():
+            if not users or u in users:
+                self._add_task(task_class(u, p))
+                print_('add task %s for user %s!' % (task_class.__name__, u))
+
+    def get_users(self, user_file):
+        users = {}
+        with open(user_file, 'r') as f:
+            for line in f:
+                if line.strip():
+                    u, p = line.strip().split(':')
+                    users[u] = p
+        print_([u for u in users])
+        return users
+
     def load_tasks(self):
         if not hasattr(self, 'ini'): self.ini = ConfigParser.ConfigParser()
-    def add_task(self, task):
-        self.task_list.append(task)
+        for n in self.ini.sections():
+            pass
+
+    def _add_task(self, task):
+        self.wait_task.append(task)
         
     @thread_func()
     def run_task(self, _task):
@@ -36,10 +57,11 @@ class TaskList:
         open(self.log_file, 'a').write(message + '\n')
 
     def run_forever(self):
+        WAIT_TIME = 30
         while True:
             for i, t in enumerate(self.wait_task):
                 now = time.time()
-                if ((t.next_start_time - now) < 60):
+                if ((t.next_start_time - now) < 2*WAIT_TIME):
                     task_state = []
                     self.running_task.append(t)
                     del self.wait_task[i]
@@ -50,11 +72,10 @@ class TaskList:
                elif t.state == 'wait':
                    del self.running_task[i]
                    self.wait_task.append(t)
-               
-            time.sleep(30)
+            time.sleep(WAIT_TIME)
 
 
-class Task1:
+class Task:
     def __init__(self, name, account, day, start_time, priority = 'low'):
         self.name = name
         self.next_start_time = 0 
@@ -80,22 +101,24 @@ class Task1:
             time.sleep(0.1)
         self.do()
 
-class SignTask(Task1):
+class SignTask(Task):
     def __init__(self, name, account):
         start_time = '00:05'
         day = 'everyday'
         priority = 'low'
-        Task1.__init__(self, name, account, day, start_time, priority)
+        Task.__init__(self, name, account, day, start_time, priority)
 
 
-class JDDataSignTask(Task1):
-    def __init__(self, account):
-        self.account = account
+class JDDataSignTask(SignTask):
+    USER_FILE = 'user.dat'
+    def __init__(self, user, passwd):
+        acc = JDMobileAccount(user, passwd)
+        SignTask.__init__(self, 'jd_data_sign', acc)
 
     def do(self):
        self.account.data_sign()
 
-class Task:
+class TaskBak:
     def __init__(self, wx = False):
         self.users = self.get_users()
         self.task_cnt = 0
@@ -132,12 +155,15 @@ class Task:
         self.task_cnt += 1
 
 if __name__ == '__main__':
-    task = Task()
-    # 13917053319, jdcarol0701, jd_5f3fd86191c95, 15618233071
-    task.do(task.data_sign, JDMobileAccount)
-    #task.do(task.data_sign, JDMobileAccount, ['13917053319']) #, 'jdcarol0701', 'jd_5f3fd86191c95'])
-    #task.do(task.data_sign, JDMobileAccount, ['13917053319'])
-    #task.do(task.charge_coupon, ['jdcarol0701'])
+    s = 2
+    if s == 1:
+        task = TaskBak()
+        # 13917053319, jdcarol0701, jd_5f3fd86191c95, 15618233071
+        task.do(task.data_sign, JDMobileAccount)
+        #task.do(task.data_sign, JDMobileAccount, ['13917053319']) #, 'jdcarol0701', 'jd_5f3fd86191c95'])
+        #task.do(task.data_sign, JDMobileAccount, ['13917053319'])
+        #task.do(task.charge_coupon, ['jdcarol0701'])
+    elif s == 2:
+        task_list = TaskList()
+        task_list.add_task(JDDataSignTask)
 
-
-        
