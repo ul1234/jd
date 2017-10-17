@@ -13,6 +13,7 @@
 from jd import JDAccount
 from jd_mobile import JDMobileAccount
 from miscellaneous import *
+import time
 import wx, ConfigParser
 
 
@@ -47,7 +48,7 @@ class TaskList:
     def _add_task(self, task):
         self.wait_task.append(task)
         
-    @thread_func()
+    #@thread_func()
     def run_task(self, _task):
         t = _task[0]
         t.state = 'running'
@@ -67,7 +68,7 @@ class TaskList:
                     del self.wait_task[i]
                     self.run_task([t])
             for i, t in enumerate(self.running_task):
-               if t.state == 'finish':
+               if t.state == 'finished':
                    del self.running_task[i]
                elif t.state == 'wait':
                    del self.running_task[i]
@@ -75,9 +76,11 @@ class TaskList:
             time.sleep(WAIT_TIME)
 
 
+
 class Task:
     def __init__(self, name, account, day, start_time, priority = 'low'):
         self.name = name
+        self.day = day
         self.next_start_time = 0 
         self.account = account
         self.priority = priority
@@ -100,6 +103,11 @@ class Task:
         while time.time() < self.next_start_time:
             time.sleep(0.1)
         self.do()
+        if self.day == 'everyday':
+            self.next_start_time = 0
+            self.state = 'wait'
+        else:
+            self.state = 'finished'
 
 class SignTask(Task):
     def __init__(self, name, account):
@@ -166,4 +174,5 @@ if __name__ == '__main__':
     elif s == 2:
         task_list = TaskList()
         task_list.add_task(JDDataSignTask)
+        task_list.run_forever()
 
