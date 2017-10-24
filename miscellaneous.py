@@ -28,6 +28,15 @@ def thread_func(time_delay = 0.01):
         return __thread_func
     return _thread_func
 
+def pass_exception(func):
+    def _pass_exception(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print '%s RUN EXCEPTION: %s\n' % (func.__name__, e)
+            print traceback.format_exc()
+    return _pass_exception
+
 def p_(str):
     pprint.pprint(str)
 

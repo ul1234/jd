@@ -14,6 +14,7 @@ from jd import JDAccount
 from jd_mobile import JDMobileAccount
 from miscellaneous import *
 import time
+from datetime import datetime
 import wx, ConfigParser
 
 
@@ -49,13 +50,16 @@ class TaskList:
         self.wait_task.append(task)
         
     #@thread_func()
+    @pass_exception
     def run_task(self, _task):
         t = _task[0]
         t.state = 'running'
         t.run()
             
-    def log(self, message):
-        open(self.log_file, 'a').write(message + '\n')
+    def log(self, message, output_time = True):
+        time_str = '[%s]' % datetime.now().strftime('%y%m%d %H:%M:%S') if output_time else ''
+        msg = '%s%s' % (time_str, message)
+        open(self.log_file, 'a').write(msg + '\n')
 
     def run_forever(self):
         WAIT_TIME = 30
@@ -81,13 +85,20 @@ class Task:
     def __init__(self, name, account, day, start_time, priority = 'low'):
         self.name = name
         self.day = day
+        self.start_time = start_time
         self.next_start_time = 0 
         self.account = account
         self.priority = priority
         self.config_file = 'task.ini'
+        self.ini_file = '%s_%s.ini' % (name, account.user)
+
+    def set_next_time(self, today):
+        pass
 
     def load_config(self):
-        self.ini.read(self.config_file)
+        if not os.path.isfile(self.ini_file):
+            return
+        self.ini.read(self.ini_file)
         if not self.name in self.ini.sections():
             print_('no task [%s] found!' % self.name)
             return []
@@ -126,6 +137,7 @@ class JDDataSignTask(SignTask):
     def do(self):
        self.account.data_sign()
 
+
 class TaskBak:
     def __init__(self, wx = False):
         self.users = self.get_users()
@@ -163,7 +175,7 @@ class TaskBak:
         self.task_cnt += 1
 
 if __name__ == '__main__':
-    s = 2
+    s = 1
     if s == 1:
         task = TaskBak()
         # 13917053319, jdcarol0701, jd_5f3fd86191c95, 15618233071
