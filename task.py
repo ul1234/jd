@@ -23,7 +23,7 @@ class TaskList:
         self.wait_task = [] 
         self.running_task = [] 
 
-    def add_task(self, task_class, users = []):
+    def add_task(self, task_class, users = [], now = False):
         user_file = task_class.USER_FILE
         users = self.get_users(user_file) 
         for u, p in users.items():
@@ -62,7 +62,7 @@ class TaskList:
         open(self.log_file, 'a').write(msg + '\n')
 
     def run_forever(self):
-        WAIT_TIME = 30
+        WAIT_TIME = 2
         while True:
             for i, t in enumerate(self.wait_task):
                 now = time.time()
@@ -82,18 +82,20 @@ class TaskList:
 
 
 class Task:
-    def __init__(self, name, account, day, start_time, priority = 'low'):
+    def __init__(self, name, account, day, start_time, priority = 'low', now = False):
         self.name = name
         self.day = day
         self.start_time = start_time
-        self.next_start_time = 0 
+        self.set_next_time(start_time, day, now)
         self.account = account
         self.priority = priority
         self.config_file = 'task.ini'
         self.ini_file = '%s_%s.ini' % (name, account.user)
+        self.ini = ConfigParser.ConfigParser()
 
-    def set_next_time(self, today):
-        pass
+    def set_next_time(self, start_time, today, now):
+        config = self.load_config()
+        ############here?????????
 
     def load_config(self):
         if not os.path.isfile(self.ini_file):
@@ -121,7 +123,7 @@ class Task:
             self.state = 'finished'
 
 class SignTask(Task):
-    def __init__(self, name, account):
+    def __init__(self, name, account, now = False):
         start_time = '00:05'
         day = 'everyday'
         priority = 'low'
@@ -130,9 +132,9 @@ class SignTask(Task):
 
 class JDDataSignTask(SignTask):
     USER_FILE = 'user.dat'
-    def __init__(self, user, passwd):
+    def __init__(self, user, passwd, now = False):
         acc = JDMobileAccount(user, passwd)
-        SignTask.__init__(self, 'jd_data_sign', acc)
+        SignTask.__init__(self, 'jd_data_sign', acc, now)
 
     def do(self):
        self.account.data_sign()
@@ -185,6 +187,6 @@ if __name__ == '__main__':
         #task.do(task.charge_coupon, ['jdcarol0701'])
     elif s == 2:
         task_list = TaskList()
-        task_list.add_task(JDDataSignTask)
+        task_list.add_task(JDDataSignTask, now = True)
         task_list.run_forever()
 
